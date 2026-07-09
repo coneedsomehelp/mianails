@@ -4,122 +4,204 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Chấm công · Pointage</title>
+<meta name="theme-color" content="#C13567">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Chấm công">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#FBF8F4; --ink:#2B2233; --ink-soft:#6E6278;
-    --rose:#B8335F; --rose-soft:#F5E3EA;
+    /* ===== Minimalist Modern tokens ===== */
+    --paper:#FAFAFA;            /* background */
+    --ink:#0F172A;              /* foreground (slate-900) */
+    --ink-soft:#64748B;         /* muted foreground (slate-500) */
+    --line:#E2E8F0;             /* border (slate-200) */
+    --card:#FFFFFF;
+    --muted:#F1F5F9;            /* muted surface (slate-100) */
+    --accent:#C13567;           /* Lacquer Rose — the signature */
+    --accent-2:#E0568C;         /* gradient endpoint */
+    --accent-rgb:193,53,103;    /* for tints — swap with accent */
+    --grad:linear-gradient(135deg,var(--accent),var(--accent-2));
+    /* semantic status colors (comprehension, not decoration) */
     --green:#237A56; --green-soft:#E1F0E9;
+    --rose:#DC2626;  --rose-soft:#FEE2E2;   /* danger/out: true red */
     --amber:#A8701A; --amber-soft:#F7ECD9;
-    --line:#E7DFDA; --card:#FFFFFF; --radius:16px;
+    --radius:16px;
+    --sh-sm:0 1px 3px rgba(15,23,42,.06);
+    --sh-md:0 4px 6px rgba(15,23,42,.07);
+    --sh-lg:0 10px 15px rgba(15,23,42,.08);
+    --sh-accent:0 4px 14px rgba(var(--accent-rgb),.25);
+    --font-ui:'Inter',system-ui,-apple-system,sans-serif;
+    --font-display:'Inter',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html{touch-action:manipulation}
   input,select,textarea{max-width:100%;font-size:16px}
-  body{font-family:'Be Vietnam Pro',-apple-system,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:16px;line-height:1.45}
+  body{font-family:var(--font-ui);background:var(--paper);color:var(--ink);min-height:100vh;font-size:16px;line-height:1.5}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .fr{display:block;font-size:.72em;font-weight:500;color:var(--ink-soft);letter-spacing:.01em}
   .fr-inline{font-size:.82em;font-weight:500;color:var(--ink-soft)}
   header{padding:14px 16px 0;max-width:960px;margin:0 auto}
   .brand{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
-  .brand h1{font-size:19px;font-weight:800;letter-spacing:-.01em}
-  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--rose);display:inline-block}
+  .brand h1{font-size:19px;font-weight:800;letter-spacing:-.02em}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--grad);box-shadow:0 0 8px rgba(var(--accent-rgb),.5);display:inline-block}
   .brand small{color:var(--ink-soft);font-weight:500;font-size:13px}
   nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
-  nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:99px;font:inherit;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer;flex-shrink:0}
+  nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:99px;font:inherit;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all .15s ease-out}
+  nav button:hover{border-color:rgba(var(--accent-rgb),.35)}
   nav button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
   main{max-width:960px;margin:0 auto;padding:18px 16px 56px}
   .view{display:none}.view.active{display:block}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
-  .btn{display:block;width:100%;border:none;border-radius:14px;cursor:pointer;font:inherit;font-weight:700;padding:16px;font-size:17px;text-align:center}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--sh-sm)}
+  .btn{display:block;width:100%;border:none;border-radius:12px;cursor:pointer;font:inherit;font-weight:600;padding:16px;font-size:17px;text-align:center;transition:all .2s ease-out}
   .btn:active{transform:scale(.98)}
-  .btn-ink{background:var(--ink);color:#fff}.btn-green{background:var(--green);color:#fff}.btn-rose{background:var(--rose);color:#fff}
+  .btn-ink{background:var(--grad);color:#fff;box-shadow:var(--sh-accent)}
+  .btn-ink:hover{filter:brightness(1.06)}
+  .btn-green{background:var(--green);color:#fff}.btn-rose{background:var(--rose);color:#fff}
   .btn-ghost{background:transparent;color:var(--ink-soft);font-weight:600;font-size:14px;padding:10px}
+  .btn-ghost:hover{color:var(--ink)}
   .btn-sm{width:auto;display:inline-block;padding:8px 14px;font-size:13.5px;border-radius:10px}
+  .btn-sm.btn-ink{box-shadow:none}
   .btn:disabled{opacity:.4;cursor:not-allowed}
-  .pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:4px 12px;font-size:13px;font-weight:700}
+  .pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:4px 12px;font-size:13px;font-weight:600}
   .pill-green{background:var(--green-soft);color:var(--green)}
   .pill-rose{background:var(--rose-soft);color:var(--rose)}
   .pill-amber{background:var(--amber-soft);color:var(--amber)}
   .muted{color:var(--ink-soft)}.center{text-align:center}
-  h2{font-size:22px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
-  .sub{color:var(--ink-soft);font-size:14px;margin-bottom:18px}
+  h2{font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:4px}
+  
+  .sub{color:var(--ink-soft);font-size:14px;margin-bottom:18px;line-height:1.6}
   .kiosk-wrap{max-width:520px;margin:0 auto;text-align:center}
-  .kiosk-card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:34px 24px 28px}
+  .kiosk-card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:34px 24px 28px;box-shadow:var(--sh-lg)}
   #qrbox{display:flex;justify-content:center;margin:6px 0 20px}
   #qrbox img,#qrbox canvas{border-radius:10px}
-  .door-code{font-size:56px;font-weight:800;letter-spacing:.14em;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;margin-bottom:6px}
+  .door-code{font-family:var(--font-mono);font-size:54px;font-weight:500;letter-spacing:.14em;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;margin-bottom:6px}
   .ring-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px}
   .ring{width:44px;height:44px;transform:rotate(-90deg)}
   .ring circle{fill:none;stroke-width:5}.ring .bg{stroke:var(--line)}
-  .ring .fg{stroke:var(--rose);stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+  .ring .fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset 1s linear}
   .ring-label{font-size:14px;color:var(--ink-soft);font-weight:600;text-align:left}
-  .kiosk-clock{margin-top:18px;font-size:15px;color:var(--ink-soft);font-weight:600}
+  .kiosk-clock{margin-top:18px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;color:var(--ink-soft)}
   .flow{max-width:440px;margin:0 auto}
   .step{display:none}.step.active{display:block}
-  .code-input{width:100%;border:1.5px solid var(--line);border-radius:14px;background:var(--card);font:inherit;font-size:26px;font-weight:800;letter-spacing:.2em;text-align:center;padding:16px;text-transform:uppercase;color:var(--ink);margin-bottom:12px}
-  .code-input:focus{outline:none;border-color:var(--rose)}
+  .code-input{width:100%;border:1.5px solid var(--line);border-radius:14px;background:var(--card);font-family:var(--font-mono);font-size:26px;font-weight:500;letter-spacing:.2em;text-align:center;padding:16px;text-transform:uppercase;color:var(--ink);margin-bottom:12px;transition:border-color .15s,box-shadow .15s}
+  .code-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.15)}
   .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:300px;margin:0 auto}
-  .pad button{border:1px solid var(--line);background:var(--card);border-radius:14px;font:inherit;font-size:24px;font-weight:700;padding:16px 0;cursor:pointer;color:var(--ink)}
-  .pad button:active{background:var(--rose-soft)}
-  .errline{color:var(--rose);font-weight:700;font-size:14px;text-align:center;min-height:22px;margin-top:10px}
+  .pad button{border:1px solid var(--line);background:var(--card);border-radius:14px;font:inherit;font-size:24px;font-weight:600;padding:16px 0;cursor:pointer;color:var(--ink);box-shadow:var(--sh-sm);transition:all .15s ease-out}
+  .pad button:active{background:rgba(var(--accent-rgb),.08);border-color:rgba(var(--accent-rgb),.35);transform:scale(.97)}
+  .errline{color:var(--rose);font-weight:600;font-size:14px;text-align:center;min-height:22px;margin-top:10px}
   .status-card{text-align:center;padding:28px 20px}
   .hours-arc{position:relative;width:190px;height:190px;margin:14px auto 8px}
   .hours-arc svg{transform:rotate(-90deg)}
-  .hours-arc .bg{fill:none;stroke:var(--line);stroke-width:12}
+  .hours-arc .bg{fill:none;stroke:var(--muted);stroke-width:12}
   .hours-arc .fg{fill:none;stroke:var(--green);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
   .hours-arc .num{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center}
-  .hours-arc .num b{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .hours-arc .num b{font-family:var(--font-mono);font-size:32px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   .hours-arc .num small{font-size:12px;color:var(--ink-soft);font-weight:600}
-  .status-name{font-size:20px;font-weight:800;margin-bottom:2px}
-  .admin-tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto}
-  .admin-tabs button{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 13px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--ink)}
-  .admin-tabs button.active{background:var(--rose-soft);border-color:var(--rose);color:var(--rose)}
-  .admin-tabs button .badge{display:inline-block;min-width:20px;padding:1px 6px;margin-left:4px;border-radius:99px;background:var(--amber);color:#fff;font-size:11.5px;text-align:center}
+  .status-name{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:2px}
+  /* ===== admin sidebar shell (UI-C) ===== */
+  .admin-shell{display:flex;gap:22px;align-items:flex-start}
+  .admin-side{flex:0 0 208px;position:sticky;top:16px;display:flex;flex-direction:column;gap:4px}
+  .admin-side button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:11px;padding:11px 13px;font:inherit;font-size:14.5px;font-weight:600;cursor:pointer;color:var(--ink-soft);transition:all .15s ease-out}
+  .admin-side button .si{width:20px;text-align:center;font-size:16px;flex-shrink:0}
+  .admin-side button:hover{background:var(--muted);color:var(--ink)}
+  .admin-side button.active{background:rgba(var(--accent-rgb),.08);color:var(--accent);border-color:rgba(var(--accent-rgb),.25)}
+  .admin-side .badge{margin-left:auto;min-width:20px;padding:1px 7px;border-radius:99px;background:var(--amber);color:#fff;font-size:11.5px;font-weight:700;text-align:center}
+  .admin-main{flex:1;min-width:0}
+  .side-scrim{display:none}
+  .menu-btn{display:none;align-items:center;gap:9px;border:1px solid var(--line);background:var(--card);border-radius:11px;padding:10px 14px;font:inherit;font-size:14.5px;font-weight:700;color:var(--ink);cursor:pointer;box-shadow:var(--sh-sm)}
+  .menu-btn .badge{min-width:20px;padding:1px 7px;border-radius:99px;background:var(--amber);color:#fff;font-size:11.5px;text-align:center}
+  /* who's-off strip */
+  .offstrip{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
+  .offstrip .ost-lbl{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-right:2px}
+  .queue-empty{background:var(--green-soft);color:var(--green);border-radius:12px;padding:14px 16px;font-size:14px;font-weight:600;margin-bottom:16px}
+  .queue-head{font-size:15px;font-weight:800;letter-spacing:-.01em;margin:2px 0 10px;display:flex;align-items:center;gap:8px}
+  @media (max-width:767px){
+    .admin-shell{display:block}
+    .menu-btn{display:inline-flex}
+    .admin-side{position:fixed;top:0;left:0;bottom:0;z-index:50;flex-basis:auto;width:264px;max-width:82vw;background:var(--card);box-shadow:0 8px 40px rgba(0,0,0,.22);padding:18px 14px;transform:translateX(-100%);transition:transform .22s ease-out;border-right:1px solid var(--line)}
+    .admin-side.open{transform:translateX(0)}
+    .side-scrim.open{display:block;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:49}
+  }
   .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
-  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
-  .stat b{font-size:26px;font-weight:800;display:block;font-variant-numeric:tabular-nums}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--sh-sm)}
+  .stat b{font-size:26px;font-weight:700;display:block;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   .stat span{font-size:12.5px;color:var(--ink-soft);font-weight:600}
   .stat.warn{border-color:#EAD7B0;background:var(--amber-soft)}
   table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   th,td{padding:11px 12px;text-align:left;font-size:14px;border-bottom:1px solid var(--line)}
-  th{background:#F5F0EC;font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+  th{background:var(--muted);font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em}
   tr:last-child td{border-bottom:none}
   td b{font-variant-numeric:tabular-nums}
-  tr.clickable{cursor:pointer}tr.clickable:hover{background:#FBF6F2}
-  .table-wrap{overflow-x:auto;border-radius:14px}
+  tr.clickable{cursor:pointer;transition:background .15s}tr.clickable:hover{background:var(--muted)}
+  .table-wrap{overflow-x:auto;border-radius:14px;box-shadow:var(--sh-sm)}
   .flag-item{background:var(--amber-soft);border:1px solid #EAD7B0;border-radius:12px;padding:14px;margin-bottom:10px;font-size:14px}
+  .flag-dev{background:#F1EDF7;border-color:#D9CFE8}
   .flag-resolve{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
   .flag-resolve input[type=time],.flag-resolve input[type=text],.punch-edit input[type=time]{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:16px;background:var(--card);color:var(--ink)}
   .flag-resolve input[type=text]{flex:1;min-width:140px}
+  .flag-resolve input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.15)}
   .punch-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;flex-wrap:wrap}
   .punch-row:last-child{border-bottom:none}
-  .punch-type-in{color:var(--green);font-weight:800}.punch-type-out{color:var(--rose);font-weight:800}
-  .corrected-badge{font-size:11px;font-weight:700;color:var(--amber);background:var(--amber-soft);border-radius:6px;padding:2px 6px}
-  .audit-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:14px}
+  .punch-type-in{color:var(--green);font-weight:700}.punch-type-out{color:var(--rose);font-weight:700}
+  .corrected-badge{font-size:11px;font-weight:600;color:var(--amber);background:var(--amber-soft);border-radius:6px;padding:2px 6px}
+  .audit-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:14px;box-shadow:var(--sh-sm)}
   .add-form{display:grid;gap:10px;max-width:400px}
-  .add-form input,.add-form select{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit;background:var(--card);color:var(--ink)}
-  .add-form input:focus{outline:none;border-color:var(--rose)}
+  .add-form input,.add-form select,.add-form textarea{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit;background:var(--card);color:var(--ink);transition:border-color .15s,box-shadow .15s}
+  .add-form input:focus,.add-form select:focus,.add-form textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.15)}
   .roster-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-  .roster-head button{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:6px 12px;font:inherit;font-weight:700;cursor:pointer;color:var(--ink)}
+  .roster-head button{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:6px 12px;font:inherit;font-weight:600;cursor:pointer;color:var(--ink);transition:all .15s ease-out}
+  .roster-head button:hover{border-color:rgba(var(--accent-rgb),.35)}
   .roster-head b{font-size:14px}
-  .cell-chip{border:none;border-radius:8px;padding:6px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
-  .chip-off{background:var(--rose-soft);color:var(--rose)}
+  .cell-chip{border:none;border-radius:8px;padding:6px 10px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .chip-off{background:rgba(var(--accent-rgb),.10);color:var(--accent)}
   .chip-pto{background:var(--green-soft);color:var(--green);cursor:default}
-  .chip-empty{background:#F1ECE8;color:#B9AFA6}
-  .count-warn{color:var(--amber);font-weight:800}
+  .chip-empty{background:var(--muted);color:#94A3B8}
+  .count-warn{color:var(--amber);font-weight:700}
   .leave-line{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;flex-wrap:wrap}
   .leave-line:last-child{border-bottom:none}
   .num-input{width:76px;border:1.5px solid var(--line);border-radius:10px;padding:8px;font:inherit;text-align:center;background:var(--card);color:var(--ink)}
-  .proto-note{background:var(--rose-soft);border:1px solid #E8C4D2;border-radius:12px;padding:10px 14px;font-size:13px;color:var(--ink);margin-bottom:16px}
+  .num-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.15)}
+  .proto-note{background:rgba(var(--accent-rgb),.05);border:1px solid rgba(var(--accent-rgb),.2);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--ink);margin-bottom:16px}
+  .action-card{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 16px;margin-bottom:12px;cursor:pointer;font:inherit;color:var(--ink);box-shadow:var(--sh-sm);transition:all .15s ease-out}
+  .action-card:hover{border-color:rgba(var(--accent-rgb),.35);box-shadow:var(--sh-md)}
+  .action-card:active{transform:scale(.985)}
+  .ac-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:48px;height:48px;border-radius:13px;background:var(--grad);font-size:22px;box-shadow:var(--sh-accent)}
+  .ac-body{flex:1;min-width:0}
+  .ac-t{display:block;font-size:17px;font-weight:700;letter-spacing:-.01em}
+  .ac-sub{display:block;font-size:13px;color:var(--ink-soft);margin-top:2px;line-height:1.45}
+  .ac-arrow{color:var(--ink-soft);font-size:18px;flex-shrink:0}
+  .grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .klabel{display:inline-flex;align-items:center;gap:8px;border-radius:99px;padding:6px 14px;margin-bottom:14px;font-family:var(--font-mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase}
+  .kdot{width:7px;height:7px;border-radius:50%;background:var(--grad);display:inline-block}
+  /* ===== kiosk: the inverted dark statement screen ===== */
+  body.kiosk-mode{background-color:#0F172A;background-image:radial-gradient(circle,rgba(255,255,255,.045) 1px,transparent 1px);background-size:32px 32px;color:#F8FAFC}
+  body.kiosk-mode .kiosk-wrap::before{content:'';position:fixed;top:-25%;right:-15%;width:70vw;height:70vw;background:radial-gradient(circle,rgba(var(--accent-rgb),.22),transparent 62%);filter:blur(50px);pointer-events:none;z-index:0}
+  body.kiosk-mode .kiosk-card{position:relative;z-index:1;background:rgba(30,41,59,.72);border-color:#334155;box-shadow:0 24px 48px rgba(0,0,0,.4)}
+  body.kiosk-mode .kiosk-card h2{color:#F8FAFC}
+  body.kiosk-mode .kiosk-card .sub{color:#94A3B8}
+  body.kiosk-mode .klabel{border:1px solid rgba(224,86,140,.4);background:rgba(var(--accent-rgb),.12);color:#E0568C}
+  body.kiosk-mode #qrbox{background:#fff;border-radius:18px;padding:14px;width:fit-content;margin:6px auto 20px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  body.kiosk-mode .door-code{background:linear-gradient(135deg,#E0568C,#F191B7);-webkit-background-clip:text;background-clip:text;color:transparent}
+  body.kiosk-mode .door-code + .muted{color:#94A3B8}
+  body.kiosk-mode .ring .bg{stroke:#334155}
+  body.kiosk-mode .ring-label{color:#94A3B8}
+  body.kiosk-mode .kiosk-clock{color:#64748B}
+  body.kiosk-mode .errline{color:#F191B7}
   @media (max-width:480px){
-    .door-code{font-size:44px}
+    .door-code{font-size:42px}
     .fr,.fr-inline{display:none}          /* phones: Vietnamese-only for a cleaner UI */
     th,td{padding:9px 8px;font-size:13px}
-    h2{font-size:19px}
+    h2{font-size:20px}
     .flag-resolve input[type=text]{width:100%}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
   }
 </style>
 </head>
@@ -142,6 +224,7 @@
   <section class="view" id="view-kiosk">
     <div class="kiosk-wrap">
       <div class="kiosk-card">
+        <div class="klabel"><span class="kdot"></span>CHẤM CÔNG · POINTAGE</div>
         <h2 id="kioskShopName">Quét để chấm công</h2>
         <p class="sub">Scannez le QR pour pointer</p>
         <div id="qrbox"></div>
@@ -164,13 +247,34 @@
   <section class="view active" id="view-emp">
     <div class="flow">
 
-      <div class="step active" id="step-code">
+      <div class="step active" id="step-home">
+        <h2 class="center" style="margin-top:6px">Xin chào 👋</h2>
+        <p class="sub center">Bạn cần làm gì hôm nay? · Que voulez-vous faire ?</p>
+        <button class="action-card" onclick="EMP.toPunch()">
+          <span class="ac-icon">⏱</span>
+          <span class="ac-body">
+            <span class="ac-t">Chấm công<span class="fr">Pointage</span></span>
+            <span class="ac-sub">Quét QR ở cửa hoặc nhập mã trên màn hình</span>
+          </span>
+          <span class="ac-arrow">›</span>
+        </button>
+        <button class="action-card" onclick="EMP.leaveEntry()">
+          <span class="ac-icon">🌴</span>
+          <span class="ac-body">
+            <span class="ac-t">Nghỉ phép &amp; giờ công<span class="fr">Congés &amp; heures</span></span>
+            <span class="ac-sub">Số dư phép, xin nghỉ, giờ làm tháng này</span>
+          </span>
+          <span class="ac-arrow">›</span>
+        </button>
+      </div>
+
+      <div class="step" id="step-code">
         <h2>Nhập mã cửa</h2>
         <p class="sub">Quét QR ở cửa tiệm, hoặc nhập mã trên màn hình — hệ thống tự nhận ra tiệm của bạn · Scannez le QR ou entrez le code affiché</p>
         <input class="code-input" id="codeInput" maxlength="6" autocomplete="off" placeholder="——————">
-        <button class="btn btn-ink" id="codeGo" onclick="EMP.checkCode()">Xác nhận <span class="fr" style="color:#ddd">Valider</span></button>
+        <button class="btn btn-ink" id="codeGo" onclick="EMP.checkCode()">Xác nhận <span class="fr" style="color:#eee">Valider</span></button>
         <div class="errline" id="codeErr"></div>
-        <button class="btn btn-ghost" style="margin-top:14px" onclick="EMP.leaveEntry()">🌴 Xin nghỉ phép / xem số dư · Demander un congé / voir le solde</button>
+        <button class="btn btn-ghost" onclick="EMP.reset()">← Quay lại · Retour</button>
       </div>
 
       <div class="step" id="step-id">
@@ -194,8 +298,6 @@
             </svg>
             <div class="num">
               <b id="stHours">0g00</b>
-              <small>hôm nay · aujourd'hui</small>
-              <small class="muted">mục tiêu 9g30 · objectif 9h30</small>
             </div>
           </div>
           <div id="stFullDay" style="min-height:30px;margin-bottom:10px"></div>
@@ -208,7 +310,12 @@
       <div class="step" id="step-leave">
         <div class="card">
           <div class="status-name" id="lvName"></div>
-          <div class="stat" style="margin:12px 0"><b id="lvBalance">–</b><span>Số dư phép (ngày) · Solde congés (jours)</span></div>
+          <div class="stat" style="margin:12px 0"><b id="lvBalance" class="grad-text">–</b><span>Số dư phép (ngày) · Solde congés (jours)</span></div>
+          <div class="stat-row" id="lvMonth" style="display:none;margin-bottom:4px">
+            <div class="stat"><b id="lvMTotal">–</b><span>Giờ tháng này · Ce mois</span></div>
+            <div class="stat"><b id="lvMFull">–</b><span>Ngày đủ công · Jours compl.</span></div>
+            <div class="stat"><b id="lvMToday">–</b><span>Hôm nay · Aujourd'hui</span></div>
+          </div>
           <div id="lvUpcoming"></div>
           <div id="lvPending"></div>
           <h2 style="font-size:17px;margin-top:18px">Xin nghỉ phép <span class="fr">Demander un congé</span></h2>
@@ -259,22 +366,25 @@
     </div>
 
     <div id="adminApp" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-        <span class="muted" style="font-size:13px" id="whoBar"></span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <button class="menu-btn" onclick="ADMIN.toggleMenu(true)">☰ Menu <span class="badge" id="menuBadge" style="display:none"></span></button>
+        <span class="muted" style="font-size:13px;flex:1" id="whoBar"></span>
         <button class="btn btn-ghost btn-sm" onclick="ADMIN.logout()">Đăng xuất · Déconnexion</button>
       </div>
-      <div class="admin-tabs">
-        <button data-atab="today" class="active">Hôm nay · Aujourd'hui</button>
-        <button data-atab="month">Tháng này · Ce mois</button>
-        <button data-atab="leave" id="leaveTabBtn">Nghỉ phép · Congés</button>
-        <button data-atab="export">Xuất lương · Export</button>
-        <button data-atab="log">Nhật ký · Journal</button>
-        <button data-atab="flags" id="flagsTabBtn">Cảnh báo · Alertes</button>
-        <button data-atab="audit">Lịch sử sửa · Historique</button>
-        <button data-atab="staff">Nhân viên · Employés</button>
-      </div>
+      <div class="admin-shell">
+        <div class="side-scrim" id="sideScrim" onclick="ADMIN.toggleMenu(false)"></div>
+        <nav class="admin-side" id="adminSide">
+          <button data-atab="today" class="active" id="todayTabBtn"><span class="si">🏠</span> Hôm nay<span class="badge" id="todayBadge" style="display:none"></span></button>
+          <button data-atab="leave" id="leaveTabBtn"><span class="si">🌴</span> Nghỉ phép<span class="badge" id="leaveBadge" style="display:none"></span></button>
+          <button data-atab="pay"><span class="si">📊</span> Tháng &amp; Lương</button>
+          <button data-atab="setup"><span class="si">⚙️</span> Thiết lập</button>
+        </nav>
+        <div class="admin-main">
 
       <div id="atab-today">
+        <div class="queue-head" id="queueHead" style="display:none">⚡ Cần xử lý hôm nay <span class="fr-inline">À traiter</span></div>
+        <div id="actionQueue"><div id="flagList"></div></div>
+        <div class="offstrip" id="offStrip" style="display:none"></div>
         <div class="roster-head" id="dayHead"></div>
         <div class="stat-row">
           <div class="stat"><b id="statIn">–</b><span id="statInLbl">Đang có mặt · Présents</span></div>
@@ -327,8 +437,6 @@
         <div class="table-wrap"><table id="tblLog"></table></div>
       </div>
 
-      <div id="atab-flags" style="display:none"><div id="flagList"></div></div>
-
       <div id="atab-audit" style="display:none"><div id="auditList"></div></div>
 
       <div id="atab-staff" style="display:none">
@@ -357,6 +465,8 @@
           <h2 style="font-size:17px">Màn hình cửa (Kiosk) <span class="fr">Écran porte</span></h2>
           <p class="muted" style="font-size:13px;margin:4px 0 8px">Mở link này trên máy tính bảng ở cửa mỗi tiệm, hoặc chép để gửi. Không gửi cho nhân viên — link chứa khóa bí mật của tiệm.</p>
           <div id="kioskLinks"></div>
+        </div>
+      </div>
         </div>
       </div>
     </div>
@@ -440,7 +550,7 @@ const KIOSK = {
       const url = location.origin + location.pathname + '?shop=' + this.shop + '&code=' + data.code;
       const box = document.getElementById('qrbox');
       box.innerHTML='';
-      new QRCode(box, {text:url, width:190, height:190, colorDark:'#2B2233', colorLight:'#FFFFFF'});
+      new QRCode(box, {text:url, width:190, height:190, colorDark:'#0F172A', colorLight:'#FFFFFF'});
       document.getElementById('kioskErr').textContent='';
     }catch(e){
       document.getElementById('kioskErr').textContent = 'Lỗi kết nối / cấu hình kiosk — kiểm tra URL. Connexion/config kiosk en erreur.';
@@ -458,6 +568,7 @@ const KIOSK = {
   },
   start(shop, key){
     this.shop = shop; this.key = key;
+    document.body.classList.add('kiosk-mode');
     document.getElementById('siteHeader').style.display='none';
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     document.getElementById('view-kiosk').classList.add('active');
@@ -483,7 +594,12 @@ const EMP = {
     document.getElementById('codeInput').value='';
     document.getElementById('codeErr').textContent='';
     const cd=document.getElementById('stErr'); cd.textContent=''; cd.style.color='';
+    this.show('step-home');
+  },
+
+  toPunch(){
     this.show('step-code');
+    document.getElementById('codeInput').focus();
   },
 
   /* --- scan: try the code against each shop; the code knows its shop --- */
@@ -512,6 +628,7 @@ const EMP = {
     const sid = await this.scanWith(shop, code);
     if(sid){ this.session = sid; this.toId(); }
     else {
+      this.show('step-code');
       document.getElementById('codeErr').innerHTML =
         'Mã đã hết hạn — nhập mã đang hiện trên màn hình cửa<span class="fr">Code expiré — entrez le code affiché</span>';
     }
@@ -647,10 +764,20 @@ const EMP = {
   },
   async openLeave(){
     const err=document.getElementById('lvIdErr');
-    const {data, error} = await sb.rpc('leave_get', {p_login_code:this.lvDigits});
-    if(error){ err.textContent='Lỗi kết nối · Erreur réseau'; return; }
-    if(!data.ok){ err.innerHTML='Không tìm thấy — kiểm tra lại mã số<span class="fr">Introuvable</span>'; this.lvDigits=''; document.getElementById('lvDigits').textContent='·'; return; }
-    this.renderLeave(data);
+    const [lg, ms] = await Promise.all([
+      sb.rpc('leave_get', {p_login_code:this.lvDigits}),
+      sb.rpc('my_summary', {p_login_code:this.lvDigits}).then(r=>r, ()=>({data:null}))
+    ]);
+    if(lg.error){ err.textContent='Lỗi kết nối · Erreur réseau'; return; }
+    if(!lg.data.ok){ err.innerHTML='Không tìm thấy — kiểm tra lại mã số<span class="fr">Introuvable</span>'; this.lvDigits=''; document.getElementById('lvDigits').textContent='·'; return; }
+    this.renderLeave(lg.data);
+    const box=document.getElementById('lvMonth');
+    if(ms.data && ms.data.ok){
+      box.style.display='';
+      document.getElementById('lvMTotal').textContent = fmtMin(ms.data.month.total_min);
+      document.getElementById('lvMFull').textContent  = ms.data.month.full_days;
+      document.getElementById('lvMToday').textContent = fmtMin(ms.data.today.minutes_today) + (ms.data.today.checked_in ? ' ●' : '');
+    } else { box.style.display='none'; }
     this.show('step-leave');
   },
   renderLeave(d){
@@ -783,6 +910,49 @@ function buildNoShows(sessions, acks){
   }
   return out;
 }
+/* device flags: informational, never affect pay (Bucket 5.5) */
+function buildDeviceFlags(acks){
+  const out=[];
+  const today=parisDay(Date.now());
+  const floor=addDays(today,-30);
+  // 1) same device punching for 2+ people on the same day
+  const byDevDay={};
+  for(const ev of events){
+    if(!ev.device) continue;
+    const d=parisDay(ev.ts);
+    if(d<floor) continue;
+    const k=ev.device+'|'+d;
+    (byDevDay[k] ||= new Map());
+    if(!byDevDay[k].has(ev.empId)) byDevDay[k].set(ev.empId, ev.ts);
+  }
+  for(const [k,m] of Object.entries(byDevDay)){
+    if(m.size>=2){
+      const [dev,d]=k.split('|');
+      const fid='devmulti-'+dev.slice(0,8)+'-'+d;
+      if(acks.has(fid)) continue;
+      out.push({kind:'dev-multi', device:dev, date:d, empIds:[...m.keys()], fid});
+    }
+  }
+  // 2) employee punches from a device never seen for them before
+  const empDevs={};
+  for(const ev of [...events].sort((a,b)=>a.ts-b.ts)){
+    if(!ev.device) continue;
+    (empDevs[ev.empId] ||= new Map());
+    if(!empDevs[ev.empId].has(ev.device)) empDevs[ev.empId].set(ev.device, ev.ts);
+  }
+  for(const [empId,m] of Object.entries(empDevs)){
+    if(m.size<2) continue;                      // one known device = nothing to compare
+    const devs=[...m.entries()].sort((a,b)=>a[1]-b[1]);
+    for(let i=1;i<devs.length;i++){             // every device after the first
+      const [dev, firstTs]=devs[i];
+      if(parisDay(firstTs)<floor) continue;
+      const fid='devnew-'+empId+'-'+dev.slice(0,8);
+      if(acks.has(fid)) continue;
+      out.push({kind:'dev-new', empId, device:dev, ts:firstTs, fid});
+    }
+  }
+  return out;
+}
 
 async function loadAll(){
   const since = new Date(Date.now() - 62*864e5).toISOString();
@@ -848,6 +1018,7 @@ const ADMIN = {
     const built = buildSessions();
     const sessions = built.sessions;
     const flags = built.flags.concat(buildNoShows(sessions, built.acks));
+    const devFlags = buildDeviceFlags(built.acks);   // informational — never in payroll
     const today = parisDay(Date.now());
     const active = employees.filter(e=>e.active);
 
@@ -882,9 +1053,26 @@ const ADMIN = {
     document.getElementById('statIn').textContent = inCount+' / '+active.length;
     document.getElementById('statFull').textContent = fullCount;
     document.getElementById('statParis').textContent = parisNow().slice(0,5);
-    document.getElementById('statFlags').textContent = flags.length;
-    document.getElementById('statFlagBox').classList.toggle('warn', flags.length>0);
-    document.getElementById('flagsTabBtn').innerHTML = 'Cảnh báo · Alertes' + (flags.length?` <span class="badge">${flags.length}</span>`:'');
+    const totalAlerts = flags.length + devFlags.length;
+    document.getElementById('statFlags').textContent = totalAlerts;
+    document.getElementById('statFlagBox').classList.toggle('warn', totalAlerts>0);
+    const pendCount = leave.filter(l=>l.type==='pto'&&l.status==='pending').length;
+    const todayBadgeN = totalAlerts + pendCount;
+    ['todayBadge','menuBadge'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){ el.textContent = todayBadgeN; el.style.display = todayBadgeN ? '' : 'none'; }
+    });
+    document.getElementById('queueHead').style.display = todayBadgeN ? '' : 'none';
+    // who's-off-today strip
+    const offList = active.filter(e=>dayoffOn(e.id,today)||ptoOn(e.id,today));
+    const os=document.getElementById('offStrip');
+    if(isToday && offList.length){
+      os.style.display='flex';
+      os.innerHTML='<span class="ost-lbl">Hôm nay nghỉ:</span>' + offList.map(e=>{
+        const pto=ptoOn(e.id,today);
+        return `<span class="pill ${pto?'pill-green':''}" ${pto?'':'style="background:rgba(var(--accent-rgb),.10);color:var(--accent)"'}>${e.name} · ${pto?'Phép':'Nghỉ tuần'}</span>`;
+      }).join('');
+    } else { os.style.display='none'; os.innerHTML=''; }
     this.renderDetail(sessions);
 
     /* ----- month ----- */
@@ -907,7 +1095,8 @@ const ADMIN = {
 
     /* ----- leave: pending queue ----- */
     const pend = leave.filter(l=>l.type==='pto'&&l.status==='pending').sort((a,b)=>a.at-b.at);
-    document.getElementById('leaveTabBtn').innerHTML = 'Nghỉ phép · Congés' + (pend.length?` <span class="badge">${pend.length}</span>`:'');
+    const lb=document.getElementById('leaveBadge');
+    if(lb){ lb.textContent = pend.length; lb.style.display = pend.length ? '' : 'none'; }
     document.getElementById('pendingQueue').innerHTML = pend.length ? pend.map(r=>{
       const e = employees.find(x=>x.id===r.empId);
       const bal = e?ptoBalance(e):0, after = bal - r.days;
@@ -1031,7 +1220,7 @@ const ADMIN = {
 
     /* ----- flags queue ----- */
     const fl=document.getElementById('flagList');
-    if(flags.length===0){
+    if(flags.length===0 && devFlags.length===0){
       fl.innerHTML='<div class="card center muted" style="padding:36px">Không có cảnh báo 🎉<span class="fr">Aucune alerte</span></div>';
     } else {
       fl.innerHTML = flags.map(f=>{
@@ -1066,6 +1255,27 @@ const ADMIN = {
             <span class="muted" style="font-size:12.5px">hoặc gán ngày nghỉ trong «Nghỉ phép»</span>
           </div></div>`;
       }).join('');
+      if(devFlags.length){
+        fl.innerHTML += '<p class="muted" style="font-size:13px;font-weight:700;margin:14px 0 8px">📱 Cảnh báo thiết bị — chỉ để kiểm tra, KHÔNG ảnh hưởng lương <span class="fr-inline">Alertes appareil — informatif</span></p>'
+          + devFlags.map(f=>{
+            if(f.kind==='dev-multi'){
+              const names=f.empIds.map(id=>{ const e2=employees.find(x=>x.id===id); return e2?e2.name:id; }).join(', ');
+              return `<div class="flag-item flag-dev"><b>Một điện thoại chấm cho ${f.empIds.length} người</b> — ngày ${fmtD(f.date)}<br>
+                <span class="muted">${names} · thiết bị ${f.device.slice(0,8)}…</span><br>
+                <span class="muted" style="font-size:12.5px">Có thể là chấm hộ — hỏi trực tiếp trước khi kết luận.</span>
+                <div class="flag-resolve">
+                  <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empIds[0]}')">✔ Đã kiểm tra · Vérifié</button>
+                </div></div>`;
+            }
+            const e2=employees.find(x=>x.id===f.empId);
+            return `<div class="flag-item flag-dev"><b>${e2?e2.name:f.empId}</b> — chấm bằng điện thoại mới lần đầu<br>
+              <span class="muted">${parisDay(f.ts)} lúc ${parisTime(f.ts)} · thiết bị ${f.device.slice(0,8)}…</span><br>
+              <span class="muted" style="font-size:12.5px">Đổi điện thoại là bình thường — xác nhận nếu đúng là máy của họ.</span>
+              <div class="flag-resolve">
+                <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">✔ Máy mới hợp lệ · Appareil confirmé</button>
+              </div></div>`;
+          }).join('');
+      }
     }
 
     /* ----- audit ----- */
@@ -1080,7 +1290,11 @@ const ADMIN = {
         let what='';
         if(c.kind==='add-out') what=`Thêm giờ RA <b>${parisTime(c.newTs)}</b> (${parisDay(c.newTs)}) — thiếu chấm ra`;
         if(c.kind==='add-in')  what=`Thêm giờ VÀO <b>${parisTime(c.newTs)}</b> (${parisDay(c.newTs)}) — thiếu chấm vào`;
-        if(c.kind==='ack')     what=c.syntheticRef ? `Ghi nhận vắng không phép (${c.syntheticRef.split('-').slice(2).join('-')})` : 'Xác nhận';
+        if(c.kind==='ack')     what = !c.syntheticRef ? 'Xác nhận'
+          : c.syntheticRef.startsWith('noshow-')   ? `Ghi nhận vắng không phép (${c.syntheticRef.split('-').slice(-3).join('-')})`
+          : c.syntheticRef.startsWith('devmulti-') ? `Đã kiểm tra cảnh báo «một máy nhiều người» (${c.syntheticRef.split('-').slice(-3).join('-')})`
+          : c.syntheticRef.startsWith('devnew-')   ? 'Xác nhận điện thoại mới hợp lệ'
+          : 'Xác nhận';
         if(c.kind==='edit')    what=`Sửa giờ ${ev&&ev.type==='in'?'VÀO':'RA'}: ${parisTime(c.oldTs)} → <b>${parisTime(c.newTs)}</b> (${parisDay(c.newTs)})`;
         if(c.kind==='void')    what=`Hủy lượt chấm lúc ${c.oldTs?parisTime(c.oldTs):''} ${c.oldTs?'('+parisDay(c.oldTs)+')':''}`;
         return `<div class="audit-item"><b>${nm}</b> — ${what}${c.note?`<br><span class="muted">«${c.note}»</span>`:''}
@@ -1091,6 +1305,14 @@ const ADMIN = {
     /* ----- staff + kiosk links ----- */
     this.renderStaff();
     this.renderKiosk();
+  },
+
+  toggleMenu(open){
+    const side=document.getElementById('adminSide');
+    const scrim=document.getElementById('sideScrim');
+    if(!side) return;
+    side.classList.toggle('open', open);
+    scrim.classList.toggle('open', open);
   },
 
   /* --- day navigation (Hôm nay tab) --- */
@@ -1209,7 +1431,7 @@ const ADMIN = {
     const newTs=parisToTs(dayKey,t);
     if(newTs<=inTs){ err.textContent='Giờ ra phải sau giờ vào'; return; }
     if(newTs>Date.now() && !confirm('Giờ này ở tương lai — chắc chắn?\nHeure dans le futur — confirmer ?')) return;
-    await this.saveCorrection({kind:'add-out', punch_id:punchId, employee_id:+empId,
+    await this.saveCorrection({kind:'add-out', punch_id:punchId, employee_id:empId,
       new_ts:new Date(newTs).toISOString(), note:note||null});
     this.refresh();
   },
@@ -1220,7 +1442,7 @@ const ADMIN = {
     if(!t){ err.textContent='Chọn giờ vào · Choisissez l\'heure'; return; }
     const newTs=parisToTs(dayKey,t);
     if(newTs>=outTs){ err.textContent='Giờ vào phải trước giờ ra'; return; }
-    await this.saveCorrection({kind:'add-in', punch_id:punchId, employee_id:+empId,
+    await this.saveCorrection({kind:'add-in', punch_id:punchId, employee_id:empId,
       new_ts:new Date(newTs).toISOString(), note:note||null});
     this.refresh();
   },
@@ -1230,19 +1452,23 @@ const ADMIN = {
     const newTs=parisToTs(parisDay(oldTs),t);
     if(newTs===oldTs) return;
     if(newTs>Date.now() && !confirm('Giờ này ở tương lai — chắc chắn?\nHeure dans le futur — confirmer ?')) return;
-    await this.saveCorrection({kind:'edit', punch_id:punchId, employee_id:+empId,
+    await this.saveCorrection({kind:'edit', punch_id:punchId, employee_id:empId,
       old_ts:new Date(oldTs).toISOString(), new_ts:new Date(newTs).toISOString()});
     this.refresh();
   },
   async voidEvent(punchId, empId, oldTs){
     if(!confirm('Hủy lượt chấm này? Bản gốc vẫn được lưu trong lịch sử.\nAnnuler ce pointage ? L\'original reste dans l\'historique.')) return;
-    await this.saveCorrection({kind:'void', punch_id:punchId, employee_id:+empId,
+    await this.saveCorrection({kind:'void', punch_id:punchId, employee_id:empId,
       old_ts:new Date(oldTs).toISOString()});
     this.refresh();
   },
   async ackNoShow(empId, date){
     if(!confirm('Ghi nhận vắng không phép ngày này? Ngày này tính 0 giờ.\nConfirmer l\'absence ?')) return;
-    await this.saveCorrection({kind:'ack', employee_id:+empId, synthetic_ref:'noshow-'+empId+'-'+date});
+    await this.saveCorrection({kind:'ack', employee_id:empId, synthetic_ref:'noshow-'+empId+'-'+date});
+    this.refresh();
+  },
+  async ackDevice(fid, empId){
+    await this.saveCorrection({kind:'ack', employee_id:empId, synthetic_ref:fid});
     this.refresh();
   },
 
@@ -1254,7 +1480,7 @@ const ADMIN = {
     const rec = leave.find(l=>l.type==='dayoff'&&l.empId===empId&&l.date===date);
     if(rec){ await sb.from('leave').delete().eq('id', rec.id); }
     else {
-      const {error} = await sb.from('leave').insert({type:'dayoff', employee_id:+empId, date, status:'approved', created_by:'manager'});
+      const {error} = await sb.from('leave').insert({type:'dayoff', employee_id:empId, date, status:'approved', created_by:'manager'});
       if(error) alert('Lỗi: '+error.message);
     }
     this.refresh();
@@ -1271,7 +1497,7 @@ const ADMIN = {
   async saveOpening(empId){
     const v=parseFloat(document.getElementById('bal-'+empId).value);
     if(isNaN(v)) return;
-    await sb.from('employees').update({pto_opening:v}).eq('id',+empId);
+    await sb.from('employees').update({pto_opening:v}).eq('id',empId);
     this.refresh();
   },
 
@@ -1291,7 +1517,7 @@ const ADMIN = {
   },
   async toggleActive(empId, active){
     if(!confirm(active?'Kích hoạt lại nhân viên này? / Réactiver ?':'Ngưng nhân viên này? Lịch sử được giữ nguyên. / Désactiver ? L\'historique est conservé.')) return;
-    await sb.from('employees').update({active}).eq('id',+empId);
+    await sb.from('employees').update({active}).eq('id',empId);
     this.refresh();
   },
 
@@ -1332,13 +1558,22 @@ const ADMIN = {
     }
   }
 };
-document.querySelectorAll('.admin-tabs button').forEach(b=>{
+const TAB_GROUPS = {
+  today: ['today'],
+  leave: ['leave'],
+  pay:   ['month','export'],
+  setup: ['staff','log','audit'],
+};
+document.querySelectorAll('.admin-side button').forEach(b=>{
   b.onclick=()=>{
-    document.querySelectorAll('.admin-tabs button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.admin-side button').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
-    ['today','month','leave','export','log','flags','audit','staff'].forEach(t=>{
-      document.getElementById('atab-'+t).style.display=(t===b.dataset.atab)?'':'none';
+    const show = TAB_GROUPS[b.dataset.atab] || [];
+    Object.values(TAB_GROUPS).flat().forEach(t=>{
+      const el = document.getElementById('atab-'+t);
+      if(el) el.style.display = show.includes(t) ? '' : 'none';
     });
+    ADMIN.toggleMenu(false);   // close drawer on mobile after picking
     ADMIN.refresh();
   };
 });
