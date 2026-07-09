@@ -17,6 +17,8 @@
     --line:#E7DFDA; --card:#FFFFFF; --radius:16px;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{touch-action:manipulation}
+  input,select,textarea{max-width:100%;font-size:16px}
   body{font-family:'Be Vietnam Pro',-apple-system,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:16px;line-height:1.45}
   .fr{display:block;font-size:.72em;font-weight:500;color:var(--ink-soft);letter-spacing:.01em}
   .fr-inline{font-size:.82em;font-weight:500;color:var(--ink-soft)}
@@ -90,7 +92,7 @@
   .table-wrap{overflow-x:auto;border-radius:14px}
   .flag-item{background:var(--amber-soft);border:1px solid #EAD7B0;border-radius:12px;padding:14px;margin-bottom:10px;font-size:14px}
   .flag-resolve{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
-  .flag-resolve input[type=time],.flag-resolve input[type=text],.punch-edit input[type=time]{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;background:var(--card);color:var(--ink)}
+  .flag-resolve input[type=time],.flag-resolve input[type=text],.punch-edit input[type=time]{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:16px;background:var(--card);color:var(--ink)}
   .flag-resolve input[type=text]{flex:1;min-width:140px}
   .punch-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;flex-wrap:wrap}
   .punch-row:last-child{border-bottom:none}
@@ -112,7 +114,13 @@
   .leave-line:last-child{border-bottom:none}
   .num-input{width:76px;border:1.5px solid var(--line);border-radius:10px;padding:8px;font:inherit;text-align:center;background:var(--card);color:var(--ink)}
   .proto-note{background:var(--rose-soft);border:1px solid #E8C4D2;border-radius:12px;padding:10px 14px;font-size:13px;color:var(--ink);margin-bottom:16px}
-  @media (max-width:420px){ .door-code{font-size:44px} }
+  @media (max-width:480px){
+    .door-code{font-size:44px}
+    .fr,.fr-inline{display:none}          /* phones: Vietnamese-only for a cleaner UI */
+    th,td{padding:9px 8px;font-size:13px}
+    h2{font-size:19px}
+    .flag-resolve input[type=text]{width:100%}
+  }
 </style>
 </head>
 <body>
@@ -267,9 +275,10 @@
       </div>
 
       <div id="atab-today">
+        <div class="roster-head" id="dayHead"></div>
         <div class="stat-row">
-          <div class="stat"><b id="statIn">–</b><span>Đang có mặt · Présents</span></div>
-          <div class="stat"><b id="statFull">–</b><span>Đủ 9g30 hôm nay · Journées complètes</span></div>
+          <div class="stat"><b id="statIn">–</b><span id="statInLbl">Đang có mặt · Présents</span></div>
+          <div class="stat"><b id="statFull">–</b><span id="statFullLbl">Đủ 9g30 · Journées complètes</span></div>
           <div class="stat" id="statFlagBox"><b id="statFlags">–</b><span>Chưa xử lý · À traiter</span></div>
           <div class="stat"><b id="statParis">–</b><span>Giờ Paris · Heure de Paris</span></div>
         </div>
@@ -331,8 +340,24 @@
             <button class="btn btn-ink" onclick="ADMIN.addEmployee()">Thêm · Ajouter</button>
             <div class="errline" id="staffErr"></div>
           </div>
+          <h2 style="font-size:16px;margin-top:18px">Thêm hàng loạt <span class="fr">Ajouter en masse</span></h2>
+          <p class="muted" style="font-size:13px;margin:4px 0 8px">Mỗi dòng: Tên, Mã số — vd: <b>Chị Hoa, 000001</b></p>
+          <div class="add-form">
+            <textarea id="bulkAdd" rows="5" style="border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit;background:var(--card);color:var(--ink)" placeholder="Chị Hoa, 000001&#10;Chị Lan, 000002&#10;Anh Minh, 000003"></textarea>
+            <button class="btn btn-ink" onclick="ADMIN.bulkAdd()">Thêm tất cả · Tout ajouter</button>
+            <div class="errline" id="bulkErr" style="text-align:left"></div>
+          </div>
+        </div>
+        <div class="roster-head">
+          <input id="staffSearch" class="num-input" style="width:auto;flex:1;min-width:160px;text-align:left" placeholder="🔍 Tìm tên / mã số · Rechercher" oninput="ADMIN.setStaffQuery(this.value)">
+          <button id="sortBtn" onclick="ADMIN.toggleStaffSort()">↕ Tên · Nom</button>
         </div>
         <div class="table-wrap"><table id="tblStaff"></table></div>
+        <div class="card" style="margin-top:16px">
+          <h2 style="font-size:17px">Màn hình cửa (Kiosk) <span class="fr">Écran porte</span></h2>
+          <p class="muted" style="font-size:13px;margin:4px 0 8px">Mở link này trên máy tính bảng ở cửa mỗi tiệm, hoặc chép để gửi. Không gửi cho nhân viên — link chứa khóa bí mật của tiệm.</p>
+          <div id="kioskLinks"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -675,7 +700,7 @@ const EMP = {
    ADMIN — authenticated managers. Reads raw tables through
    RLS and reuses the trial-tested ledger math verbatim.
 ===================================================== */
-let employees=[], events=[], corrections=[], leave=[], mgrNames={};
+let employees=[], events=[], corrections=[], leave=[], shops=[], mgrNames={};
 
 function effectiveEvents(){
   const edits={}, voids=new Set(), addOuts={}, addIns={}, acks=new Set();
@@ -762,13 +787,15 @@ function buildNoShows(sessions, acks){
 async function loadAll(){
   const since = new Date(Date.now() - 62*864e5).toISOString();
   const corSince = new Date(Date.now() - 95*864e5).toISOString();
-  const [emps, pns, cors, lvs, mgrs] = await Promise.all([
+  const [emps, pns, cors, lvs, mgrs, shp] = await Promise.all([
     sb.from('employees').select('*').order('id'),
     sb.from('punches').select('*').gte('ts', since).limit(20000),
     sb.from('corrections').select('*').gte('created_at', corSince).limit(20000),
     sb.from('leave').select('*').limit(20000),
     sb.from('managers').select('user_id, name'),
+    sb.from('shops').select('id, name, kiosk_key').order('id'),
   ]);
+  shops = shp.data || [];
   mgrNames = {}; (mgrs.data||[]).forEach(m=>mgrNames[m.user_id]=m.name);
   employees = (emps.data||[]).map(e=>({ id:String(e.id), name:e.name, pin:e.login_code,
     ptoOpening:+e.pto_opening, ptoStart:String(e.pto_start_month).slice(0,7), active:e.active }));
@@ -824,23 +851,34 @@ const ADMIN = {
     const today = parisDay(Date.now());
     const active = employees.filter(e=>e.active);
 
-    /* ----- today ----- */
+    /* ----- day view (today or any picked past day) ----- */
+    const vd = this.viewDay || today;
+    const isToday = vd === today;
+    document.getElementById('dayHead').innerHTML =
+      `<button onclick="ADMIN.shiftDay(-1)">‹</button>
+       <input type="date" class="num-input" style="width:auto" value="${vd}" max="${today}" onchange="ADMIN.setDay(this.value)">
+       <button onclick="ADMIN.shiftDay(1)" ${isToday?'disabled':''}>›</button>
+       ${!isToday?`<button onclick="ADMIN.setDay(null)">Hôm nay · Aujourd'hui</button>`:''}`;
     let inCount=0, fullCount=0;
-    let rows='<tr><th>Tên · Nom</th><th>Trạng thái · Statut</th><th>Giờ hôm nay · Heures</th><th>Vào lúc · Arrivée</th></tr>';
+    let rows=`<tr><th>Tên · Nom</th><th>${isToday?'Trạng thái · Statut':'Ngày '+fmtD(vd)}</th><th>Giờ · Heures</th><th>Vào lúc · Arrivée</th></tr>`;
     for(const e of active){
-      const mins = minutesForDay(e.id, today, sessions);
-      const live = sessions.find(s=>s.empId===e.id && s.end===null);
+      const mins = minutesForDay(e.id, vd, sessions);
+      const live = isToday ? sessions.find(s=>s.empId===e.id && s.end===null) : null;
       const hasFlag = flags.some(f=>f.empId===e.id);
-      if(live) inCount++;
+      if(live) inCount++; else if(!isToday && mins>0) inCount++;
       if(mins>=FULL_DAY_MIN) fullCount++;
-      const st = live ? `<span class="pill pill-green">● Tiệm ${live.shop} · Salon ${live.shop}</span>`
-                      : `<span class="pill pill-rose">○ Vắng · Absent</span>`;
-      const firstToday = sessions.filter(s=>s.empId===e.id && parisDay(s.start)===today).sort((a,b)=>a.start-b.start)[0];
+      const st = isToday
+        ? (live ? `<span class="pill pill-green">● Tiệm ${live.shop} · Salon ${live.shop}</span>`
+                : `<span class="pill pill-rose">○ Vắng · Absent</span>`)
+        : (mins>0 ? `<span class="pill pill-green">Có làm · Travaillé</span>`
+                  : `<span class="pill pill-rose">Nghỉ · Absent</span>`);
+      const firstDay = sessions.filter(s=>s.empId===e.id && parisDay(s.start)===vd).sort((a,b)=>a.start-b.start)[0];
       rows += `<tr class="clickable" onclick="ADMIN.selectEmp('${e.id}')"><td><b>${e.name}</b>${hasFlag?' <span class="pill pill-amber">⚠</span>':''}</td>
         <td>${st}</td><td><b>${fmtMin(mins)}</b>${mins>=FULL_DAY_MIN?' <span class="pill pill-green">9g30 ✔</span>':''}</td>
-        <td>${firstToday?parisTime(firstToday.start):'—'}</td></tr>`;
+        <td>${firstDay?parisTime(firstDay.start):'—'}</td></tr>`;
     }
     document.getElementById('tblToday').innerHTML = rows;
+    document.getElementById('statInLbl').textContent = isToday ? 'Đang có mặt · Présents' : 'Có đi làm · Ont travaillé';
     document.getElementById('statIn').textContent = inCount+' / '+active.length;
     document.getElementById('statFull').textContent = fullCount;
     document.getElementById('statParis').textContent = parisNow().slice(0,5);
@@ -1050,14 +1088,85 @@ const ADMIN = {
       }).join('');
     }
 
-    /* ----- staff ----- */
+    /* ----- staff + kiosk links ----- */
+    this.renderStaff();
+    this.renderKiosk();
+  },
+
+  /* --- day navigation (Hôm nay tab) --- */
+  shiftDay(n){
+    const today = parisDay(Date.now());
+    let nd = addDays(this.viewDay || today, n);
+    if(nd >= today) nd = null;             // clamp at today
+    this.viewDay = nd;
+    this.refresh();
+  },
+  setDay(v){
+    const today = parisDay(Date.now());
+    this.viewDay = (v && v < today) ? v : null;
+    this.refresh();
+  },
+
+  /* --- staff: search, sort, bulk add, kiosk links --- */
+  renderStaff(){
+    const q = (this.staffQuery||'').toLowerCase().trim();
+    const list = employees
+      .filter(e=>!q || e.name.toLowerCase().includes(q) || e.pin.includes(q))
+      .sort((a,b)=> this.staffSort==='code'
+        ? a.pin.localeCompare(b.pin, 'vi', {numeric:true})
+        : a.name.localeCompare(b.name, 'vi'));
     let srows='<tr><th>Tên · Nom</th><th>Mã số · Code</th><th>Trạng thái · Statut</th><th></th></tr>';
-    employees.forEach(e=>{
+    if(list.length===0) srows+='<tr><td colspan="4" class="muted center">Không tìm thấy · Aucun résultat</td></tr>';
+    list.forEach(e=>{
       srows += `<tr><td><b>${e.name}</b></td><td><b>${e.pin}</b></td>
         <td>${e.active?'<span class="pill pill-green">Đang làm · Actif</span>':'<span class="pill pill-rose">Đã nghỉ · Inactif</span>'}</td>
         <td><button class="btn btn-ghost btn-sm" onclick="ADMIN.toggleActive('${e.id}', ${!e.active})">${e.active?'Ngưng · Désactiver':'Kích hoạt · Réactiver'}</button></td></tr>`;
     });
     document.getElementById('tblStaff').innerHTML = srows;
+  },
+  setStaffQuery(v){ this.staffQuery = v; this.renderStaff(); },
+  toggleStaffSort(){
+    this.staffSort = this.staffSort==='code' ? 'name' : 'code';
+    document.getElementById('sortBtn').textContent = this.staffSort==='code' ? '↕ Mã · Code' : '↕ Tên · Nom';
+    this.renderStaff();
+  },
+  async bulkAdd(){
+    const err = document.getElementById('bulkErr'); err.style.color=''; err.textContent='';
+    const raw = document.getElementById('bulkAdd').value.trim();
+    if(!raw) return;
+    const seen = new Set(employees.map(e=>e.pin));
+    const toInsert = [], bad = [];
+    for(const line of raw.split('\n').map(l=>l.trim()).filter(Boolean)){
+      const i = line.lastIndexOf(',');
+      if(i < 1){ bad.push(line+'   ← thiếu dấu phẩy'); continue; }
+      const name = line.slice(0,i).trim(), code = line.slice(i+1).trim();
+      if(!name || !/^\d{1,6}$/.test(code)){ bad.push(line+'   ← mã không hợp lệ'); continue; }
+      if(seen.has(code)){ bad.push(line+'   ← mã trùng'); continue; }
+      seen.add(code);
+      toInsert.push({name, login_code:code});
+    }
+    if(toInsert.length){
+      const {error} = await sb.from('employees').insert(toInsert);
+      if(error){ err.textContent = 'Lỗi: '+error.message; return; }
+    }
+    document.getElementById('bulkAdd').value = bad.join('\n');
+    err.style.color = bad.length ? '' : 'var(--green)';
+    err.textContent = `Đã thêm ${toInsert.length} người` + (bad.length ? ` — ${bad.length} dòng lỗi được giữ lại bên trên để sửa` : ' ✓');
+    this.refresh();
+  },
+  renderKiosk(){
+    const box = document.getElementById('kioskLinks');
+    if(!box) return;
+    box.innerHTML = shops.length ? shops.map(s=>{
+      const url = location.origin + location.pathname + `?kiosk=1&shop=${s.id}&key=${s.kiosk_key}`;
+      return `<div class="leave-line"><b>${s.name}</b>
+        <button class="btn btn-ink btn-sm" onclick="ADMIN.copyText('${url}')">📋 Chép link · Copier</button>
+        <a class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose);text-decoration:none" href="${url}" target="_blank">🔗 Mở · Ouvrir</a></div>`;
+    }).join('') : '<span class="muted">—</span>';
+  },
+  async copyText(t){
+    try{ await navigator.clipboard.writeText(t); alert('Đã chép ✓ · Copié ✓'); }
+    catch(e){ prompt('Chép thủ công · Copier manuellement :', t); }
   },
 
   /* --- per-employee punch editor --- */
@@ -1099,7 +1208,7 @@ const ADMIN = {
     if(!t){ err.textContent='Chọn giờ ra · Choisissez l\'heure'; return; }
     const newTs=parisToTs(dayKey,t);
     if(newTs<=inTs){ err.textContent='Giờ ra phải sau giờ vào'; return; }
-    if(newTs>Date.now()){ err.textContent='Không thể ở tương lai'; return; }
+    if(newTs>Date.now() && !confirm('Giờ này ở tương lai — chắc chắn?\nHeure dans le futur — confirmer ?')) return;
     await this.saveCorrection({kind:'add-out', punch_id:punchId, employee_id:+empId,
       new_ts:new Date(newTs).toISOString(), note:note||null});
     this.refresh();
@@ -1120,7 +1229,7 @@ const ADMIN = {
     if(!t) return;
     const newTs=parisToTs(parisDay(oldTs),t);
     if(newTs===oldTs) return;
-    if(newTs>Date.now()){ alert('Không thể ở tương lai / Impossible dans le futur'); return; }
+    if(newTs>Date.now() && !confirm('Giờ này ở tương lai — chắc chắn?\nHeure dans le futur — confirmer ?')) return;
     await this.saveCorrection({kind:'edit', punch_id:punchId, employee_id:+empId,
       old_ts:new Date(oldTs).toISOString(), new_ts:new Date(newTs).toISOString()});
     this.refresh();
