@@ -46,7 +46,7 @@
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .fr{display:block;font-size:.72em;font-weight:500;color:var(--ink-soft);letter-spacing:.01em}
   .fr-inline{font-size:.82em;font-weight:500;color:var(--ink-soft)}
-  header{padding:14px 16px 0;max-width:960px;margin:0 auto}
+  header{padding:14px 16px 0;max-width:1280px;margin:0 auto}
   .brand{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
   .brand h1{font-size:19px;font-weight:800;letter-spacing:-.02em}
   .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--grad);box-shadow:0 0 8px rgba(var(--accent-rgb),.5);display:inline-block}
@@ -55,7 +55,7 @@
   nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:99px;font:inherit;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all .15s ease-out}
   nav button:hover{border-color:rgba(var(--accent-rgb),.35)}
   nav button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-  main{max-width:960px;margin:0 auto;padding:18px 16px 56px}
+  main{max-width:1280px;margin:0 auto;padding:18px 16px 56px}
   .view{display:none}.view.active{display:block}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--sh-sm)}
   .btn{display:block;width:100%;border:none;border-radius:12px;cursor:pointer;font:inherit;font-weight:600;padding:16px;font-size:17px;text-align:center;transition:all .2s ease-out}
@@ -65,7 +65,7 @@
   .btn-green{background:var(--green);color:#fff}.btn-rose{background:var(--rose);color:#fff}
   .btn-ghost{background:transparent;color:var(--ink-soft);font-weight:600;font-size:14px;padding:10px}
   .btn-ghost:hover{color:var(--ink)}
-  .btn-sm{width:auto;display:inline-block;padding:8px 14px;font-size:13.5px;border-radius:10px}
+  .btn-sm{width:auto;display:inline-block;padding:7px 12px;font-size:13.5px;border-radius:10px;white-space:nowrap}
   .btn-sm.btn-ink{box-shadow:none}
   .btn:disabled{opacity:.4;cursor:not-allowed}
   .pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:4px 12px;font-size:13px;font-weight:600}
@@ -120,7 +120,12 @@
   .offstrip{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
   .offstrip .ost-lbl{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-right:2px}
   .queue-empty{background:var(--green-soft);color:var(--green);border-radius:12px;padding:14px 16px;font-size:14px;font-weight:600;margin-bottom:16px}
-  .queue-head{font-size:15px;font-weight:800;letter-spacing:-.01em;margin:2px 0 10px;display:flex;align-items:center;gap:8px}
+  .queue-head{font-size:15px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .np-sub{font-size:12.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px}
+  .detail-tr td{background:var(--muted);padding:12px 14px}
+  .cov-ok{color:var(--green);font-weight:700}
+  .cov-warn{color:var(--amber);font-weight:700}
+  .cov-bad{color:var(--rose);font-weight:800}
   @media (max-width:767px){
     .admin-shell{display:block}
     .menu-btn{display:inline-flex}
@@ -135,7 +140,7 @@
   .stat.warn{border-color:#EAD7B0;background:var(--amber-soft)}
   table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   th,td{padding:11px 12px;text-align:left;font-size:14px;border-bottom:1px solid var(--line)}
-  th{background:var(--muted);font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em}
+  th{background:var(--muted);font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em}
   tr:last-child td{border-bottom:none}
   td b{font-variant-numeric:tabular-nums}
   tr.clickable{cursor:pointer;transition:background .15s}tr.clickable:hover{background:var(--muted)}
@@ -376,14 +381,28 @@
         <nav class="admin-side" id="adminSide">
           <button data-atab="today" class="active" id="todayTabBtn"><span class="si">🏠</span> Hôm nay<span class="badge" id="todayBadge" style="display:none"></span></button>
           <button data-atab="leave" id="leaveTabBtn"><span class="si">🌴</span> Nghỉ phép<span class="badge" id="leaveBadge" style="display:none"></span></button>
+          <button data-atab="staff"><span class="si">👥</span> Nhân viên</button>
+          <button data-atab="log"><span class="si">🕐</span> Lịch sử chấm công</button>
+          <button data-atab="audit"><span class="si">✏️</span> Lịch sử sửa</button>
           <button data-atab="pay"><span class="si">📊</span> Tháng &amp; Lương</button>
-          <button data-atab="setup"><span class="si">⚙️</span> Thiết lập</button>
+          <button data-atab="kiosk"><span class="si">🖥️</span> Kiosk</button>
         </nav>
         <div class="admin-main">
 
       <div id="atab-today">
-        <div class="queue-head" id="queueHead" style="display:none">⚡ Cần xử lý hôm nay <span class="fr-inline">À traiter</span></div>
-        <div id="actionQueue"><div id="flagList"></div></div>
+        <div class="card" id="notifPanel" style="display:none;margin-bottom:16px">
+          <div class="queue-head">Cần xử lý <span class="badge" id="npCount" style="background:var(--amber)"></span>
+            <button class="btn btn-sm" style="background:var(--muted);color:var(--ink);margin-left:auto" onclick="ADMIN.ackAll()" id="ackAllBtn">Ghi nhận tất cả</button>
+          </div>
+          <div id="npLeaveWrap" style="display:none">
+            <p class="np-sub">🌴 Đơn nghỉ phép chờ duyệt (<span id="npLeaveN">0</span>)</p>
+            <div id="npLeave"></div>
+          </div>
+          <div id="npFlagsWrap" style="display:none">
+            <p class="np-sub">⚠ Cảnh báo chấm công &amp; thiết bị (<span id="npFlagsN">0</span>)</p>
+            <div id="flagList"></div>
+          </div>
+        </div>
         <div class="offstrip" id="offStrip" style="display:none"></div>
         <div class="roster-head" id="dayHead"></div>
         <div class="stat-row">
@@ -394,7 +413,6 @@
         </div>
         <p class="muted" style="font-size:13px;margin-bottom:8px">Nhấn vào tên để xem &amp; sửa lượt chấm. <span class="fr-inline">Touchez un nom pour corriger les pointages.</span></p>
         <div class="table-wrap"><table id="tblToday"></table></div>
-        <div id="empDetail" style="margin-top:14px"></div>
       </div>
 
       <div id="atab-month" style="display:none">
@@ -410,11 +428,7 @@
           <div class="roster-head" id="rosterHead"></div>
           <div class="table-wrap"><table id="tblRoster"></table></div>
         </div>
-        <div class="card">
-          <h2 style="font-size:17px">Số dư phép <span class="fr">Soldes congés</span></h2>
-          <p class="muted" style="font-size:13px;margin:4px 0 10px">Cộng dồn 2,5 ngày/tháng từ tháng bắt đầu — chỉnh «Dư đầu» để khớp thực tế.</p>
-          <div class="table-wrap"><table id="tblBalance"></table></div>
-        </div>
+
       </div>
 
       <div id="atab-export" style="display:none">
@@ -423,8 +437,8 @@
           <p class="muted" style="font-size:13px;margin:4px 0 10px">Chỉ giờ công — tiền lương tính trong Google Sheets.</p>
           <div class="roster-head">
             <select id="payMonth" class="num-input" style="width:auto;text-align:left" onchange="ADMIN.setPayMonth(this.value)"></select>
-            <button onclick="ADMIN.downloadCSV()">⬇ Tải CSV · Télécharger</button>
-            <button onclick="ADMIN.copyTSV()">📋 Chép cho Sheets · Copier</button>
+            <button onclick="ADMIN.downloadCSV()">Tải CSV · Télécharger</button>
+            <button onclick="ADMIN.copyTSV()">Chép cho Sheets · Copier</button>
           </div>
           <div id="payWarnBanner"></div>
           <div class="table-wrap"><table id="tblPay"></table></div>
@@ -433,11 +447,22 @@
       </div>
 
       <div id="atab-log" style="display:none">
-        <p class="muted" style="font-size:13px;margin-bottom:8px">Mọi lượt chấm tháng này, mới nhất trước.</p>
+        <div class="roster-head">
+          <input id="logSearch" class="num-input" style="width:auto;flex:1;min-width:160px;text-align:left" placeholder="Tìm theo tên · Rechercher" oninput="ADMIN.setLogQuery(this.value)">
+          <button id="logSortBtn" onclick="ADMIN.toggleLogSort()">Mới nhất trước</button>
+          <button onclick="ADMIN.exportLog()">Tải CSV</button>
+        </div>
+        <p class="muted" style="font-size:13px;margin-bottom:8px">Mọi lượt chấm trong tháng này. <span class="fr-inline">Tous les pointages du mois.</span></p>
         <div class="table-wrap"><table id="tblLog"></table></div>
       </div>
 
-      <div id="atab-audit" style="display:none"><div id="auditList"></div></div>
+      <div id="atab-audit" style="display:none">
+        <div class="roster-head">
+          <input id="auditSearch" class="num-input" style="width:auto;flex:1;min-width:160px;text-align:left" placeholder="Tìm theo tên / ghi chú · Rechercher" oninput="ADMIN.setAuditQuery(this.value)">
+          <button id="auditSortBtn" onclick="ADMIN.toggleAuditSort()">Mới nhất trước</button>
+        </div>
+        <div id="auditList"></div>
+      </div>
 
       <div id="atab-staff" style="display:none">
         <div class="card" style="margin-bottom:16px">
@@ -461,7 +486,10 @@
           <button id="sortBtn" onclick="ADMIN.toggleStaffSort()">↕ Tên · Nom</button>
         </div>
         <div class="table-wrap"><table id="tblStaff"></table></div>
-        <div class="card" style="margin-top:16px">
+      </div>
+
+      <div id="atab-kiosk" style="display:none">
+        <div class="card">
           <h2 style="font-size:17px">Màn hình cửa (Kiosk) <span class="fr">Écran porte</span></h2>
           <p class="muted" style="font-size:13px;margin:4px 0 8px">Mở link này trên máy tính bảng ở cửa mỗi tiệm, hoặc chép để gửi. Không gửi cho nhân viên — link chứa khóa bí mật của tiệm.</p>
           <div id="kioskLinks"></div>
@@ -895,11 +923,15 @@ function buildNoShows(sessions, acks){
   const out=[]; const today=parisDay(Date.now()); const floor=addDays(today,-30);
   for(const e of employees){
     if(!e.active) continue;
+    // no expectations before the system has ever seen this person punch
+    const firstTs = events.filter(ev=>ev.empId===e.id).reduce((a,ev)=>Math.min(a,ev.ts), Infinity);
+    if(firstTs===Infinity) continue;
+    const firstDay = parisDay(firstTs);
     const weeks = new Set(leave.filter(l=>l.type==='dayoff'&&l.empId===e.id).map(l=>weekMonday(l.date)));
     for(const wk of weeks){
       for(let i=0;i<7;i++){
         const d=addDays(wk,i);
-        if(d>=today || d<floor) continue;
+        if(d>=today || d<floor || d<firstDay) continue;
         if(dayoffOn(e.id,d) || ptoOn(e.id,d)) continue;
         if(sessions.some(s=>s.empId===e.id && parisDay(s.start)===d)) continue;
         const fid='noshow-'+e.id+'-'+d;
@@ -1045,8 +1077,11 @@ const ADMIN = {
                   : `<span class="pill pill-rose">Nghỉ · Absent</span>`);
       const firstDay = sessions.filter(s=>s.empId===e.id && parisDay(s.start)===vd).sort((a,b)=>a.start-b.start)[0];
       rows += `<tr class="clickable" onclick="ADMIN.selectEmp('${e.id}')"><td><b>${e.name}</b>${hasFlag?' <span class="pill pill-amber">⚠</span>':''}</td>
-        <td>${st}</td><td><b>${fmtMin(mins)}</b>${mins>=FULL_DAY_MIN?' <span class="pill pill-green">9g30 ✔</span>':''}</td>
+        <td>${st}</td><td><b>${fmtMin(mins)}</b>${mins>=FULL_DAY_MIN?' <span class="pill pill-green">9g30</span>':''}</td>
         <td>${firstDay?parisTime(firstDay.start):'—'}</td></tr>`;
+      if(this.selectedEmp===e.id){
+        rows += `<tr class="detail-tr"><td colspan="4">${this.dayDetailHtml(e, vd)}</td></tr>`;
+      }
     }
     document.getElementById('tblToday').innerHTML = rows;
     document.getElementById('statInLbl').textContent = isToday ? 'Đang có mặt · Présents' : 'Có đi làm · Ont travaillé';
@@ -1062,7 +1097,6 @@ const ADMIN = {
       const el=document.getElementById(id);
       if(el){ el.textContent = todayBadgeN; el.style.display = todayBadgeN ? '' : 'none'; }
     });
-    document.getElementById('queueHead').style.display = todayBadgeN ? '' : 'none';
     // who's-off-today strip
     const offList = active.filter(e=>dayoffOn(e.id,today)||ptoOn(e.id,today));
     const os=document.getElementById('offStrip');
@@ -1073,7 +1107,7 @@ const ADMIN = {
         return `<span class="pill ${pto?'pill-green':''}" ${pto?'':'style="background:rgba(var(--accent-rgb),.10);color:var(--accent)"'}>${e.name} · ${pto?'Phép':'Nghỉ tuần'}</span>`;
       }).join('');
     } else { os.style.display='none'; os.innerHTML=''; }
-    this.renderDetail(sessions);
+
 
     /* ----- month ----- */
     const mo = parisMonth(Date.now());
@@ -1094,10 +1128,10 @@ const ADMIN = {
     document.getElementById('tblMonth').innerHTML = mrows;
 
     /* ----- leave: pending queue ----- */
-    const pend = leave.filter(l=>l.type==='pto'&&l.status==='pending').sort((a,b)=>a.at-b.at);
+    const pend = leave.filter(l=>l.type==='pto'&&l.status==='pending').sort((a,b)=>b.at-a.at);
     const lb=document.getElementById('leaveBadge');
     if(lb){ lb.textContent = pend.length; lb.style.display = pend.length ? '' : 'none'; }
-    document.getElementById('pendingQueue').innerHTML = pend.length ? pend.map(r=>{
+    const pendHtml = pend.length ? pend.map(r=>{
       const e = employees.find(x=>x.id===r.empId);
       const bal = e?ptoBalance(e):0, after = bal - r.days;
       return `<div class="flag-item" style="background:var(--card);border-color:var(--line)">
@@ -1105,10 +1139,14 @@ const ADMIN = {
         ${r.note?`<br><span class="muted">«${r.note}»</span>`:''}
         <br><span class="muted" style="font-size:12.5px">Số dư: ${bal.toFixed(1)} → sau khi duyệt: <b style="color:${after<0?'var(--rose)':'var(--green)'}">${after.toFixed(1)}</b></span>
         <div class="flag-resolve">
-          <button class="btn btn-green btn-sm" onclick="ADMIN.decideLeave('${r.id}','approved',${after})">✔ Duyệt · Approuver</button>
-          <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose)" onclick="ADMIN.decideLeave('${r.id}','rejected',0)">✕ Từ chối · Refuser</button>
+          <button class="btn btn-green btn-sm" onclick="ADMIN.decideLeave('${r.id}','approved',${after})">Duyệt · Approuver</button>
+          <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose)" onclick="ADMIN.decideLeave('${r.id}','rejected',0)">Từ chối · Refuser</button>
         </div></div>`;
     }).join('') : '<div class="card center muted" style="padding:20px">Không có đơn chờ duyệt · Aucune demande en attente</div>';
+    document.getElementById('pendingQueue').innerHTML = pendHtml;
+    document.getElementById('npLeave').innerHTML = pend.length ? pendHtml : '';
+    document.getElementById('npLeaveWrap').style.display = pend.length ? '' : 'none';
+    document.getElementById('npLeaveN').textContent = pend.length;
 
     /* ----- leave: weekly roster ----- */
     const DW=['T2','T3','T4','T5','T6','T7','CN'];
@@ -1117,13 +1155,15 @@ const ADMIN = {
       `<button onclick="ADMIN.shiftWeek(-1)">‹</button>
        <b>Tuần · Semaine ${fmtD(mon)} – ${fmtD(addDays(mon,6))}</b>
        <button onclick="ADMIN.shiftWeek(1)">›</button>
-       ${(this.weekOffset||0)!==0?'<button onclick="ADMIN.resetWeek()">Tuần này · Cette semaine</button>':''}`;
+       ${(this.weekOffset||0)!==0?'<button onclick="ADMIN.resetWeek()">Tuần này · Cette semaine</button>':''}
+       <button style="margin-left:auto" onclick="ADMIN.copyLastWeek()">Chép tuần trước · Copier sem. préc.</button>`;
     let rrows='<tr><th>Tên · Nom</th>'+DW.map((w,i)=>{
       const d=addDays(mon,i);
       return `<th style="text-align:center${d===today?';color:var(--rose)':''}">${w}<br>${fmtD(d)}</th>`;
     }).join('')+'</tr>';
     for(const e of active){
-      rrows += `<tr><td><b>${e.name}</b></td>`+DW.map((w,i)=>{
+      const offCnt = DW.filter((w,i)=>{ const d=addDays(mon,i); return dayoffOn(e.id,d)||ptoOn(e.id,d); }).length;
+      rrows += `<tr><td><b>${e.name}</b>${offCnt===0?' <span class="pill pill-amber" style="font-size:10.5px;padding:1px 7px">chưa nghỉ</span>':''}</td>`+DW.map((w,i)=>{
         const d=addDays(mon,i);
         const pr = leave.find(l=>l.type==='pto'&&l.empId===e.id&&l.status==='approved'&&l.startDate<=d&&l.endDate>=d);
         if(pr) return `<td class="center"><span class="cell-chip chip-pto">${pr.half?'½ Phép':'Phép'}</span></td>`;
@@ -1132,25 +1172,14 @@ const ADMIN = {
         return `<td class="center"><button class="cell-chip chip-empty" onclick="ADMIN.toggleDayOff('${e.id}','${d}')">+</button></td>`;
       }).join('')+'</tr>';
     }
-    rrows += `<tr><td class="muted" style="font-size:12.5px;font-weight:700">Nghỉ/ngày · Absents</td>`+DW.map((w,i)=>{
+    rrows += `<tr><td class="muted" style="font-size:12.5px;font-weight:700">Đi làm · Effectif</td>`+DW.map((w,i)=>{
       const d=addDays(mon,i);
-      const n = active.filter(e=>dayoffOn(e.id,d)||ptoOn(e.id,d)).length;
-      const warn = n > active.length/3;
-      return `<td class="center ${warn?'count-warn':'muted'}" style="font-size:13px;font-weight:700">${n||'–'}${warn?' ⚠':''}</td>`;
+      const off = active.filter(e=>dayoffOn(e.id,d)||ptoOn(e.id,d)).length;
+      const work = active.length - off;
+      const cls = off > active.length/2 ? 'cov-bad' : off > active.length/3 ? 'cov-warn' : 'cov-ok';
+      return `<td class="center ${cls}" style="font-size:13px">${work}${cls==='cov-bad'?' — thiếu người!':cls==='cov-warn'?' ⚠':''}</td>`;
     }).join('')+'</tr>';
     document.getElementById('tblRoster').innerHTML = rrows;
-
-    /* ----- leave: balances ----- */
-    let brows='<tr><th>Tên · Nom</th><th>Dư đầu · Initial</th><th>Cộng dồn · Acquis</th><th>Đã dùng · Utilisé</th><th>Số dư · Solde</th></tr>';
-    for(const e of active){
-      const bal=ptoBalance(e);
-      brows += `<tr><td><b>${e.name}</b></td>
-        <td><input class="num-input" id="bal-${e.id}" type="number" step="0.5" value="${e.ptoOpening||0}">
-            <button class="btn btn-ink btn-sm" onclick="ADMIN.saveOpening('${e.id}')">💾</button></td>
-        <td>${ptoAccrued(e).toFixed(1)}</td><td>${ptoUsed(e).toFixed(1)}</td>
-        <td><b style="color:${bal<0?'var(--rose)':'var(--green)'}">${bal.toFixed(1)}</b></td></tr>`;
-    }
-    document.getElementById('tblBalance').innerHTML = brows;
 
     /* ----- payroll export ----- */
     const pm = this.payMonth || parisMonth(Date.now());
@@ -1206,8 +1235,14 @@ const ADMIN = {
     /* ----- journal ----- */
     const {evs:logEvs}=effectiveEvents();
     const moLog=parisMonth(Date.now());
+    const lq=(this.logQuery||'').toLowerCase().trim();
+    if(document.getElementById('logSearch') && document.getElementById('logSearch').value!==(this.logQuery||''))
+      document.getElementById('logSearch').value=this.logQuery||'';
     let lrows='<tr><th>Ngày · Date</th><th>Giờ · Heure</th><th>Loại · Type</th><th>Tên · Nom</th><th>Tiệm · Salon</th><th></th></tr>';
-    const logList=logEvs.filter(x=>parisMonth(x.ts)===moLog).sort((a,b)=>b.ts-a.ts);
+    const logList=logEvs.filter(x=>parisMonth(x.ts)===moLog)
+      .filter(x=>{ if(!lq) return true; const e2=employees.find(y=>y.id===x.empId); return e2 && e2.name.toLowerCase().includes(lq); })
+      .sort((a,b)=> this.logSort==='asc' ? a.ts-b.ts : b.ts-a.ts);
+    this._logList = logList;
     if(logList.length===0){ lrows+='<tr><td colspan="6" class="muted center">Chưa có lượt chấm nào · Aucun pointage</td></tr>'; }
     logList.forEach(ev=>{
       const e=employees.find(x=>x.id===ev.empId);
@@ -1219,9 +1254,19 @@ const ADMIN = {
     document.getElementById('tblLog').innerHTML = lrows;
 
     /* ----- flags queue ----- */
+    flags.sort((a,b)=>(b.ts||Date.parse(b.date))-(a.ts||Date.parse(a.date)));
+    devFlags.sort((a,b)=>(b.ts||Date.parse(b.date))-(a.ts||Date.parse(a.date)));
+    this._ackables = flags.filter(f=>f.kind==='no-show').map(f=>({employee_id:f.empId, synthetic_ref:f.fid}))
+      .concat(devFlags.map(f=>({employee_id:(f.empId||f.empIds[0]), synthetic_ref:f.fid})));
+    const totalNp = flags.length + devFlags.length;
+    document.getElementById('npFlagsWrap').style.display = totalNp ? '' : 'none';
+    document.getElementById('npFlagsN').textContent = totalNp;
+    document.getElementById('npCount').textContent = totalNp + pend.length;
+    document.getElementById('notifPanel').style.display = (totalNp + pend.length) ? '' : 'none';
+    document.getElementById('ackAllBtn').style.display = this._ackables.length ? '' : 'none';
     const fl=document.getElementById('flagList');
-    if(flags.length===0 && devFlags.length===0){
-      fl.innerHTML='<div class="card center muted" style="padding:36px">Không có cảnh báo 🎉<span class="fr">Aucune alerte</span></div>';
+    if(totalNp===0){
+      fl.innerHTML='';
     } else {
       fl.innerHTML = flags.map(f=>{
         const e=employees.find(x=>x.id===f.empId);
@@ -1251,7 +1296,7 @@ const ADMIN = {
         return `<div class="flag-item"><b>${nm}</b> — Vắng không phép ngày <b>${fmtD(f.date)}</b> <span class="fr-inline">Absence non justifiée</span><br>
           <span class="muted" style="font-size:12.5px">Không chấm công, không ngày nghỉ tuần, không nghỉ phép được duyệt.</span>
           <div class="flag-resolve">
-            <button class="btn btn-ink btn-sm" onclick="ADMIN.ackNoShow('${f.empId}','${f.date}')">✔ Ghi nhận vắng · Confirmer l'absence</button>
+            <button class="btn btn-ink btn-sm" onclick="ADMIN.ackNoShow('${f.empId}','${f.date}')">Ghi nhận vắng · Confirmer</button>
             <span class="muted" style="font-size:12.5px">hoặc gán ngày nghỉ trong «Nghỉ phép»</span>
           </div></div>`;
       }).join('');
@@ -1264,7 +1309,7 @@ const ADMIN = {
                 <span class="muted">${names} · thiết bị ${f.device.slice(0,8)}…</span><br>
                 <span class="muted" style="font-size:12.5px">Có thể là chấm hộ — hỏi trực tiếp trước khi kết luận.</span>
                 <div class="flag-resolve">
-                  <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empIds[0]}')">✔ Đã kiểm tra · Vérifié</button>
+                  <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empIds[0]}')">Đã kiểm tra · Vérifié</button>
                 </div></div>`;
             }
             const e2=employees.find(x=>x.id===f.empId);
@@ -1272,7 +1317,7 @@ const ADMIN = {
               <span class="muted">${parisDay(f.ts)} lúc ${parisTime(f.ts)} · thiết bị ${f.device.slice(0,8)}…</span><br>
               <span class="muted" style="font-size:12.5px">Đổi điện thoại là bình thường — xác nhận nếu đúng là máy của họ.</span>
               <div class="flag-resolve">
-                <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">✔ Máy mới hợp lệ · Appareil confirmé</button>
+                <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Máy mới hợp lệ · Confirmé</button>
               </div></div>`;
           }).join('');
       }
@@ -1280,10 +1325,15 @@ const ADMIN = {
 
     /* ----- audit ----- */
     const al=document.getElementById('auditList');
-    if(corrections.length===0){
+    const aq=(this.auditQuery||'').toLowerCase().trim();
+    const auditListArr=[...corrections]
+      .filter(c=>{ if(!aq) return true; const e2=employees.find(y=>y.id===c.empId);
+        return (e2&&e2.name.toLowerCase().includes(aq)) || (c.note&&c.note.toLowerCase().includes(aq)) || (c.by&&c.by.toLowerCase().includes(aq)); })
+      .sort((a,b)=> this.auditSort==='asc' ? a.at-b.at : b.at-a.at);
+    if(auditListArr.length===0){
       al.innerHTML='<div class="card center muted" style="padding:36px">Chưa có chỉnh sửa nào<span class="fr">Aucune correction</span></div>';
     } else {
-      al.innerHTML=[...corrections].reverse().map(c=>{
+      al.innerHTML=auditListArr.map(c=>{
         const ev=events.find(x=>x.id===c.eventId);
         const e=employees.find(x=>x.id===c.empId);
         const nm=e?e.name:'?';
@@ -1305,6 +1355,85 @@ const ADMIN = {
     /* ----- staff + kiosk links ----- */
     this.renderStaff();
     this.renderKiosk();
+  },
+
+  dayDetailHtml(e, vd){
+    const {evs}=effectiveEvents();
+    const mine=evs.filter(x=>x.empId===e.id && parisDay(x.ts)===vd).sort((a,b)=>a.ts-b.ts);
+    let h = `<b style="font-size:13.5px">Lượt chấm ${fmtD(vd)} — ${e.name}</b>`;
+    if(mine.length===0) h += '<p class="muted" style="font-size:13px;margin-top:6px">Không có lượt chấm ngày này.</p>';
+    mine.forEach(ev=>{
+      h += `<div class="punch-row">
+        <span class="punch-type-${ev.type}" style="min-width:46px">${ev.type==='in'?'VÀO':'RA'}</span>
+        <b style="min-width:52px">${parisTime(ev.ts)}</b>
+        ${ev.corrected?'<span class="corrected-badge">đã sửa</span>':''}
+        <span class="punch-edit"><input type="time" id="pe-${ev.id}" value="${parisTime(ev.ts)}"></span>
+        <button class="btn btn-ink btn-sm" onclick="event.stopPropagation();ADMIN.editPunch('${ev.id}','${ev.empId}',${ev.ts})">Lưu giờ mới</button>
+        <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose)" onclick="event.stopPropagation();ADMIN.voidEvent('${ev.id}','${ev.empId}',${ev.ts})">Hủy lượt</button>
+      </div>`;
+    });
+    h += `<button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="event.stopPropagation();ADMIN.goLog('${e.name.replace(/'/g,"\\'")}')">Xem cả tháng trong Lịch sử chấm công →</button>`;
+    return `<div onclick="event.stopPropagation()">${h}</div>`;
+  },
+  goLog(name){
+    this.logQuery = name;
+    const btn=document.querySelector('.admin-side button[data-atab="log"]');
+    if(btn) btn.click();
+  },
+  async ackAll(){
+    const items=this._ackables||[];
+    if(!items.length) return;
+    if(!confirm(`Ghi nhận ${items.length} mục (vắng không phép & cảnh báo thiết bị)?\nCác mục cần nhập giờ hoặc duyệt đơn vẫn giữ nguyên.`)) return;
+    const rows=items.map(x=>({kind:'ack', employee_id:x.employee_id, synthetic_ref:x.synthetic_ref, manager_id:this.user.id}));
+    const {error}=await sb.from('corrections').insert(rows);
+    if(error) alert('Lỗi: '+error.message);
+    this.refresh();
+  },
+
+  setLogQuery(v){ this.logQuery=v; this.refresh(); },
+  toggleLogSort(){
+    this.logSort = this.logSort==='asc' ? 'desc' : 'asc';
+    document.getElementById('logSortBtn').textContent = this.logSort==='asc' ? 'Cũ nhất trước' : 'Mới nhất trước';
+    this.refresh();
+  },
+  exportLog(){
+    const list=this._logList||[];
+    const q=x=>'"'+String(x).replace(/"/g,'""')+'"';
+    const lines=[['Ngày / Date','Giờ / Heure','Loại / Type','Tên / Nom','Tiệm / Salon','Đã sửa / Corrigé'].map(q).join(',')];
+    list.forEach(ev=>{
+      const e=employees.find(x=>x.id===ev.empId);
+      lines.push([parisDay(ev.ts), parisTime(ev.ts), ev.type==='in'?'VÀO':'RA', q(e?e.name:ev.empId), 'Tiệm '+ev.shop, ev.corrected?'x':''].join(','));
+    });
+    const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='lich-su-cham-cong-'+parisMonth(Date.now())+'.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  },
+  setAuditQuery(v){ this.auditQuery=v; this.refresh(); },
+  toggleAuditSort(){
+    this.auditSort = this.auditSort==='asc' ? 'desc' : 'asc';
+    document.getElementById('auditSortBtn').textContent = this.auditSort==='asc' ? 'Cũ nhất trước' : 'Mới nhất trước';
+    this.refresh();
+  },
+  async copyLastWeek(){
+    const today=parisDay(Date.now());
+    const mon=addDays(weekMonday(today),(this.weekOffset||0)*7);
+    const inserts=[];
+    for(const e of employees.filter(x=>x.active)){
+      for(let i=0;i<7;i++){
+        const d=addDays(mon,i), prev=addDays(mon,i-7);
+        if(d<today) continue;                                   // never rewrite the past
+        if(!dayoffOn(e.id,prev)) continue;
+        if(dayoffOn(e.id,d) || ptoOn(e.id,d)) continue;
+        inserts.push({type:'dayoff', employee_id:e.id, date:d, status:'approved', created_by:'manager'});
+      }
+    }
+    if(!inserts.length){ alert('Không có gì để chép — tuần trước trống hoặc tuần này đã xếp.'); return; }
+    if(!confirm(`Chép ${inserts.length} ngày nghỉ từ tuần trước sang tuần này?`)) return;
+    const {error}=await sb.from('leave').insert(inserts);
+    if(error) alert('Lỗi: '+error.message);
+    this.refresh();
   },
 
   toggleMenu(open){
@@ -1337,12 +1466,16 @@ const ADMIN = {
       .sort((a,b)=> this.staffSort==='code'
         ? a.pin.localeCompare(b.pin, 'vi', {numeric:true})
         : a.name.localeCompare(b.name, 'vi'));
-    let srows='<tr><th>Tên · Nom</th><th>Mã số · Code</th><th>Trạng thái · Statut</th><th></th></tr>';
-    if(list.length===0) srows+='<tr><td colspan="4" class="muted center">Không tìm thấy · Aucun résultat</td></tr>';
+    let srows='<tr><th>Tên · Nom</th><th>Mã số · Code</th><th>Số dư phép · Solde</th><th>Dư đầu · Initial</th><th>Trạng thái · Statut</th><th></th></tr>';
+    if(list.length===0) srows+='<tr><td colspan="6" class="muted center">Không tìm thấy · Aucun résultat</td></tr>';
     list.forEach(e=>{
+      const bal=ptoBalance(e);
       srows += `<tr><td><b>${e.name}</b></td><td><b>${e.pin}</b></td>
-        <td>${e.active?'<span class="pill pill-green">Đang làm · Actif</span>':'<span class="pill pill-rose">Đã nghỉ · Inactif</span>'}</td>
-        <td><button class="btn btn-ghost btn-sm" onclick="ADMIN.toggleActive('${e.id}', ${!e.active})">${e.active?'Ngưng · Désactiver':'Kích hoạt · Réactiver'}</button></td></tr>`;
+        <td><b style="color:${bal<0?'var(--rose)':'var(--green)'}">${bal.toFixed(1)}</b></td>
+        <td><input class="num-input" id="bal-${e.id}" type="number" step="0.5" value="${e.ptoOpening||0}">
+            <button class="btn btn-ink btn-sm" onclick="ADMIN.saveOpening('${e.id}')">Lưu</button></td>
+        <td>${e.active?'<span class="pill pill-green">Đang làm</span>':'<span class="pill pill-rose">Đã nghỉ</span>'}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="ADMIN.toggleActive('${e.id}', ${!e.active})">${e.active?'Ngưng':'Kích hoạt'}</button></td></tr>`;
     });
     document.getElementById('tblStaff').innerHTML = srows;
   },
@@ -1382,8 +1515,8 @@ const ADMIN = {
     box.innerHTML = shops.length ? shops.map(s=>{
       const url = location.origin + location.pathname + `?kiosk=1&shop=${s.id}&key=${s.kiosk_key}`;
       return `<div class="leave-line"><b>${s.name}</b>
-        <button class="btn btn-ink btn-sm" onclick="ADMIN.copyText('${url}')">📋 Chép link · Copier</button>
-        <a class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose);text-decoration:none" href="${url}" target="_blank">🔗 Mở · Ouvrir</a></div>`;
+        <button class="btn btn-ink btn-sm" onclick="ADMIN.copyText('${url}')">Chép link · Copier</button>
+        <a class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose);text-decoration:none" href="${url}" target="_blank">Mở · Ouvrir</a></div>`;
     }).join('') : '<span class="muted">—</span>';
   },
   async copyText(t){
@@ -1391,32 +1524,8 @@ const ADMIN = {
     catch(e){ prompt('Chép thủ công · Copier manuellement :', t); }
   },
 
-  /* --- per-employee punch editor --- */
+  /* --- per-employee punch editor (inline day dropdown) --- */
   selectEmp(id){ this.selectedEmp=(this.selectedEmp===id?null:id); this.refresh(); },
-  renderDetail(){
-    const box=document.getElementById('empDetail');
-    if(!this.selectedEmp){ box.innerHTML=''; return; }
-    const e=employees.find(x=>x.id===this.selectedEmp);
-    if(!e){ box.innerHTML=''; return; }
-    const {evs}=effectiveEvents();
-    const mo=parisMonth(Date.now());
-    const mine=evs.filter(x=>x.empId===e.id && parisMonth(x.ts)===mo).sort((a,b)=>b.ts-a.ts);
-    let html=`<div class="card"><h2 style="font-size:17px">Lượt chấm của ${e.name} — tháng này <span class="fr">Pointages — ce mois</span></h2>`;
-    if(mine.length===0){ html+='<p class="muted" style="margin-top:10px">Chưa có lượt chấm nào.</p>'; }
-    mine.forEach(ev=>{
-      html += `<div class="punch-row">
-        <span style="min-width:86px">${parisDay(ev.ts)}</span>
-        <span class="punch-type-${ev.type}" style="min-width:46px">${ev.type==='in'?'VÀO':'RA'}</span>
-        <b style="min-width:52px">${parisTime(ev.ts)}</b>
-        ${ev.corrected?'<span class="corrected-badge">đã sửa · corrigé</span>':''}
-        <span class="punch-edit"><input type="time" id="pe-${ev.id}" value="${parisTime(ev.ts)}"></span>
-        <button class="btn btn-ink btn-sm" onclick="ADMIN.editPunch('${ev.id}','${ev.empId}',${ev.ts})">💾 Sửa · Modifier</button>
-        <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose)" onclick="ADMIN.voidEvent('${ev.id}','${ev.empId}',${ev.ts})">🗑 Hủy · Annuler</button>
-      </div>`;
-    });
-    html += `<button class="btn btn-ghost" style="margin-top:8px" onclick="ADMIN.selectEmp(null)">Đóng · Fermer</button></div>`;
-    box.innerHTML=html;
-  },
 
   /* --- corrections (attributed to the signed-in manager by RLS) --- */
   async saveCorrection(rec){
@@ -1561,8 +1670,11 @@ const ADMIN = {
 const TAB_GROUPS = {
   today: ['today'],
   leave: ['leave'],
+  staff: ['staff'],
+  log:   ['log'],
+  audit: ['audit'],
   pay:   ['month','export'],
-  setup: ['staff','log','audit'],
+  kiosk: ['kiosk'],
 };
 document.querySelectorAll('.admin-side button').forEach(b=>{
   b.onclick=()=>{
