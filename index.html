@@ -42,6 +42,8 @@
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html{touch-action:manipulation}
   input,select,textarea{max-width:100%;font-size:16px}
+  input[type=date],input[type=time]{min-width:0;-webkit-appearance:none;appearance:none}
+  .add-form input,.add-form select{width:100%;min-width:0}
   body{font-family:var(--font-ui);background:var(--paper);color:var(--ink);min-height:100vh;font-size:16px;line-height:1.5}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .fr{display:block;font-size:.72em;font-weight:500;color:var(--ink-soft);letter-spacing:.01em}
@@ -486,6 +488,11 @@
           <button id="sortBtn" onclick="ADMIN.toggleStaffSort()">↕ Tên · Nom</button>
         </div>
         <div class="table-wrap"><table id="tblStaff"></table></div>
+        <div class="card" style="margin-top:16px">
+          <h2 style="font-size:17px">Tài khoản quản lý <span class="fr">Comptes managers</span></h2>
+          <p class="muted" style="font-size:13px;margin:4px 0 8px">Chỉ để xem. Tạo tài khoản / đổi mật khẩu trong Supabase — xem RUNBOOK-5.3.</p>
+          <div id="mgrList"></div>
+        </div>
       </div>
 
       <div id="atab-kiosk" style="display:none">
@@ -855,7 +862,7 @@ const EMP = {
    ADMIN — authenticated managers. Reads raw tables through
    RLS and reuses the trial-tested ledger math verbatim.
 ===================================================== */
-let employees=[], events=[], corrections=[], leave=[], shops=[], mgrNames={};
+let employees=[], events=[], corrections=[], leave=[], shops=[], mgrNames={}, managersList=[];
 
 function effectiveEvents(){
   const edits={}, voids=new Set(), addOuts={}, addIns={}, acks=new Set();
@@ -994,11 +1001,12 @@ async function loadAll(){
     sb.from('punches').select('*').gte('ts', since).limit(20000),
     sb.from('corrections').select('*').gte('created_at', corSince).limit(20000),
     sb.from('leave').select('*').limit(20000),
-    sb.from('managers').select('user_id, name'),
+    sb.from('managers').select('user_id, name, role, shop_id'),
     sb.from('shops').select('id, name, kiosk_key').order('id'),
   ]);
   shops = shp.data || [];
   mgrNames = {}; (mgrs.data||[]).forEach(m=>mgrNames[m.user_id]=m.name);
+  managersList = mgrs.data || [];
   employees = (emps.data||[]).map(e=>({ id:String(e.id), name:e.name, pin:e.login_code,
     ptoOpening:+e.pto_opening, ptoStart:String(e.pto_start_month).slice(0,7), active:e.active }));
   events = (pns.data||[]).map(p=>({ id:p.id, empId:String(p.employee_id), shop:p.shop_id,
@@ -1038,6 +1046,12 @@ const ADMIN = {
     document.getElementById('adminApp').style.display='';
     document.getElementById('whoBar').textContent = this.user.email;
     await this.refresh();
+    const want=Q.get('open');
+    if(want && !this._deepLinked && typeof TAB_GROUPS!=='undefined' && TAB_GROUPS[want]){
+      this._deepLinked=true;
+      const b=document.querySelector(`.admin-side button[data-atab="${want}"]`);
+      if(b) b.click();
+    }
   },
 
   async refresh(){
@@ -1354,6 +1368,7 @@ const ADMIN = {
 
     /* ----- staff + kiosk links ----- */
     this.renderStaff();
+    this.renderMgrs();
     this.renderKiosk();
   },
 
@@ -1470,16 +1485,49 @@ const ADMIN = {
     if(list.length===0) srows+='<tr><td colspan="6" class="muted center">Không tìm thấy · Aucun résultat</td></tr>';
     list.forEach(e=>{
       const bal=ptoBalance(e);
+      if(this.editingEmp===e.id){
+        srows += `<tr style="background:var(--muted)"><td><input class="num-input" style="width:100%;min-width:130px;text-align:left" id="en-${e.id}" value="${e.name.replace(/"/g,'&quot;')}"></td>
+          <td><input class="num-input" id="ec-${e.id}" maxlength="6" inputmode="numeric" value="${e.pin}"></td>
+          <td colspan="2"><span class="errline" id="ee-${e.id}" style="text-align:left;min-height:0"></span></td>
+          <td><button class="btn btn-ink btn-sm" onclick="ADMIN.saveEmpEdit('${e.id}')">Lưu</button></td>
+          <td><button class="btn btn-ghost btn-sm" onclick="ADMIN.cancelEmpEdit()">Hủy</button></td></tr>`;
+        return;
+      }
       srows += `<tr><td><b>${e.name}</b></td><td><b>${e.pin}</b></td>
         <td><b style="color:${bal<0?'var(--rose)':'var(--green)'}">${bal.toFixed(1)}</b></td>
         <td><input class="num-input" id="bal-${e.id}" type="number" step="0.5" value="${e.ptoOpening||0}">
             <button class="btn btn-ink btn-sm" onclick="ADMIN.saveOpening('${e.id}')">Lưu</button></td>
         <td>${e.active?'<span class="pill pill-green">Đang làm</span>':'<span class="pill pill-rose">Đã nghỉ</span>'}</td>
-        <td><button class="btn btn-ghost btn-sm" onclick="ADMIN.toggleActive('${e.id}', ${!e.active})">${e.active?'Ngưng':'Kích hoạt'}</button></td></tr>`;
+        <td><button class="btn btn-ghost btn-sm" onclick="ADMIN.editEmp('${e.id}')">Sửa</button>
+            <button class="btn btn-ghost btn-sm" onclick="ADMIN.toggleActive('${e.id}', ${!e.active})">${e.active?'Ngưng':'Kích hoạt'}</button></td></tr>`;
     });
     document.getElementById('tblStaff').innerHTML = srows;
   },
   setStaffQuery(v){ this.staffQuery = v; this.renderStaff(); },
+  editEmp(id){ this.editingEmp=id; this.renderStaff(); },
+  cancelEmpEdit(){ this.editingEmp=null; this.renderStaff(); },
+  async saveEmpEdit(id){
+    const e=employees.find(x=>x.id===id); if(!e) return;
+    const name=document.getElementById('en-'+id).value.trim();
+    const code=document.getElementById('ec-'+id).value.trim();
+    const err=document.getElementById('ee-'+id); err.textContent='';
+    if(!name){ err.textContent='Cần tên'; return; }
+    if(!/^\d{1,6}$/.test(code)){ err.textContent='Mã: 1–6 chữ số'; return; }
+    if(code!==e.pin && !confirm(`Đổi mã đăng nhập ${e.pin} → ${code}?\nMã cũ NGỪNG hoạt động ngay — báo cho nhân viên trước.`)) return;
+    const {error}=await sb.from('employees').update({name, login_code:code}).eq('id', id);
+    if(error){ err.textContent = error.code==='23505' ? 'Mã số này đã có người dùng' : ('Lỗi: '+error.message); return; }
+    this.editingEmp=null;
+    this.refresh();
+  },
+  renderMgrs(){
+    const box=document.getElementById('mgrList'); if(!box) return;
+    box.innerHTML = managersList.length ? managersList.map(m=>{
+      const shop = m.shop_id ? shops.find(x=>x.id===m.shop_id) : null;
+      return `<div class="leave-line"><b>${m.name}</b>
+        <span class="pill" style="background:var(--muted);color:var(--ink-soft)">${m.role==='owner'?'Chủ · Propriétaire':'Quản lý · Manager'}</span>
+        <span class="muted" style="font-size:13px">${shop?shop.name:'Tất cả tiệm · Tous salons'}</span></div>`;
+    }).join('') : '<span class="muted">—</span>';
+  },
   toggleStaffSort(){
     this.staffSort = this.staffSort==='code' ? 'name' : 'code';
     document.getElementById('sortBtn').textContent = this.staffSort==='code' ? '↕ Mã · Code' : '↕ Tên · Nom';
@@ -1516,8 +1564,20 @@ const ADMIN = {
       const url = location.origin + location.pathname + `?kiosk=1&shop=${s.id}&key=${s.kiosk_key}`;
       return `<div class="leave-line"><b>${s.name}</b>
         <button class="btn btn-ink btn-sm" onclick="ADMIN.copyText('${url}')">Chép link · Copier</button>
-        <a class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose);text-decoration:none" href="${url}" target="_blank">Mở · Ouvrir</a></div>`;
+        <a class="btn btn-sm" style="background:rgba(var(--accent-rgb),.10);color:var(--accent);text-decoration:none" href="${url}" target="_blank">Mở · Ouvrir</a>
+        <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose);margin-left:auto" onclick="ADMIN.rotateKiosk(${s.id}, '${s.name.replace(/'/g,"\\'")}')">Cấp khóa mới</button></div>`;
     }).join('') : '<span class="muted">—</span>';
+  },
+  async rotateKiosk(shopId, shopName){
+    if(!confirm(`Cấp khóa kiosk MỚI cho ${shopName}?\nLink cũ trên máy tính bảng NGỪNG hoạt động ngay — dùng khi máy bị mất/lộ link.`)) return;
+    if(!confirm('Chắc chắn? Sau đó phải mở link mới trên máy tính bảng.')) return;
+    const {data, error} = await sb.rpc('rotate_kiosk_key', {p_shop_id: shopId});
+    if(error || !data || !data.ok){
+      alert('Không đổi được khóa — đã chạy 11_manager_conveniences.sql chưa?\n'+(error?error.message:''));
+      return;
+    }
+    alert('Đã cấp khóa mới ✓ — chép link mới bên dưới và mở trên máy tính bảng.');
+    this.refresh();
   },
   async copyText(t){
     try{ await navigator.clipboard.writeText(t); alert('Đã chép ✓ · Copié ✓'); }
@@ -1692,6 +1752,11 @@ document.querySelectorAll('.admin-side button').forEach(b=>{
 
 /* ---------- boot & routing ---------- */
 (async ()=>{
+  if(Q.get('open')){
+    // arrived from a Telegram button — go straight to the admin
+    const t=document.querySelector('#mainNav button[data-view="admin"]');
+    if(t) t.click();
+  }
   if(Q.get('kiosk')==='1' && Q.get('shop') && Q.get('key')){
     KIOSK.start(+Q.get('shop'), Q.get('key'));
     return;
