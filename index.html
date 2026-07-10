@@ -506,6 +506,7 @@
       </div>
     </div>
   </section>
+  <p class="center muted" style="font-size:11px;margin-top:28px" id="buildTag"></p>
 </main>
 
 <script>
@@ -519,6 +520,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
+const BUILD='v2026.07.10-1';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -1749,6 +1751,26 @@ document.querySelectorAll('.admin-side button').forEach(b=>{
     ADMIN.refresh();
   };
 });
+
+/* ---------- update check: no more cache clearing ---------- */
+document.getElementById('buildTag').textContent = BUILD;
+async function checkUpdate(){
+  try{
+    const r = await fetch(location.pathname + '?v=' + Date.now(), {cache:'no-store'});
+    const t = await r.text();
+    const m = t.match(/const BUILD='([^']+)'/);
+    if(m && m[1] !== BUILD && !document.getElementById('updBar')){
+      const d = document.createElement('div');
+      d.id = 'updBar';
+      d.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:99px;font-size:14px;font-weight:600;z-index:99;box-shadow:var(--sh-lg);cursor:pointer;white-space:nowrap';
+      d.textContent = 'Có bản mới — bấm để cập nhật · Mise à jour';
+      d.onclick = ()=>{ const u = new URL(location.href); u.searchParams.set('u', Date.now()); location.href = u; };
+      document.body.appendChild(d);
+    }
+  }catch(e){}
+}
+setTimeout(checkUpdate, 90*1000);
+setInterval(checkUpdate, 30*60*1000);
 
 /* ---------- boot & routing ---------- */
 (async ()=>{
