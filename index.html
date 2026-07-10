@@ -48,7 +48,6 @@
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .fr{display:block;font-size:.72em;font-weight:500;color:var(--ink-soft);letter-spacing:.01em}
   .fr-inline{font-size:.82em;font-weight:500;color:var(--ink-soft)}
-  body.lang-vi .fr,body.lang-vi .fr-inline{display:none !important}
   header{padding:14px 16px 0;max-width:1280px;margin:0 auto}
   .brand{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
   .brand h1{font-size:19px;font-weight:800;letter-spacing:-.02em}
@@ -78,6 +77,7 @@
   .muted{color:var(--ink-soft)}.center{text-align:center}
   h2{font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:4px}
   
+  .card-h{font-size:18px;font-weight:700;letter-spacing:-.01em;line-height:1.25;margin-bottom:4px}
   .sub{color:var(--ink-soft);font-size:14px;margin-bottom:18px;line-height:1.6}
   .kiosk-wrap{max-width:520px;margin:0 auto;text-align:center}
   .kiosk-card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:34px 24px 28px;box-shadow:var(--sh-lg)}
@@ -225,7 +225,6 @@
   <nav id="mainNav">
     <button data-view="emp" class="active">Nhân viên <span class="fr">Employé</span></button>
     <button data-view="admin">Quản lý <span class="fr">Admin</span></button>
-    <button id="langBtn" style="margin-left:auto" onclick="LANG.cycle()">🌐 Auto</button>
   </nav>
 </header>
 
@@ -328,7 +327,7 @@
           </div>
           <div id="lvUpcoming"></div>
           <div id="lvPending"></div>
-          <h2 style="font-size:17px;margin-top:18px">Xin nghỉ phép <span class="fr">Demander un congé</span></h2>
+          <h2 class="card-h" style="margin-top:18px">Xin nghỉ phép <span class="fr">Demander un congé</span></h2>
           <div class="add-form" style="margin-top:10px;max-width:none">
             <label class="muted" style="font-size:13px;font-weight:700">Từ ngày · Du</label>
             <input type="date" id="lvStart">
@@ -428,7 +427,7 @@
       <div id="atab-leave" style="display:none">
         <div id="pendingQueue" style="margin-bottom:16px"></div>
         <div class="card" style="margin-bottom:16px">
-          <h2 style="font-size:17px">Lịch tuần <span class="fr">Planning hebdomadaire</span></h2>
+          <h2 class="card-h">Lịch tuần <span class="fr">Planning hebdomadaire</span></h2>
           <p class="muted" style="font-size:13px;margin:4px 0 10px">Nhấn ô để gán / bỏ ngày nghỉ tuần. Ô xanh = nghỉ phép đã duyệt.</p>
           <div class="roster-head" id="rosterHead"></div>
           <div class="table-wrap"><table id="tblRoster"></table></div>
@@ -438,7 +437,7 @@
 
       <div id="atab-export" style="display:none">
         <div class="card" style="margin-bottom:16px">
-          <h2 style="font-size:17px">Bảng công tháng <span class="fr">Feuille d'heures mensuelle</span></h2>
+          <h2 class="card-h">Bảng công tháng <span class="fr">Feuille d'heures mensuelle</span></h2>
           <p class="muted" style="font-size:13px;margin:4px 0 10px">Chỉ giờ công — tiền lương tính trong Google Sheets.</p>
           <div class="roster-head">
             <select id="payMonth" class="num-input" style="width:auto;text-align:left" onchange="ADMIN.setPayMonth(this.value)"></select>
@@ -471,14 +470,14 @@
 
       <div id="atab-staff" style="display:none">
         <div class="card" style="margin-bottom:16px">
-          <h2 style="font-size:17px">Thêm nhân viên <span class="fr">Ajouter un employé</span></h2>
+          <h2 class="card-h">Thêm nhân viên <span class="fr">Ajouter un employé</span></h2>
           <div class="add-form" style="margin-top:12px">
             <input id="newName" placeholder="Tên · Nom (vd: Chị Hoa)">
             <input id="newPin" placeholder="Mã số · Code (vd: 000007)" maxlength="6" inputmode="numeric">
             <button class="btn btn-ink" onclick="ADMIN.addEmployee()">Thêm · Ajouter</button>
             <div class="errline" id="staffErr"></div>
           </div>
-          <h2 style="font-size:16px;margin-top:18px">Thêm hàng loạt <span class="fr">Ajouter en masse</span></h2>
+          <h2 class="card-h" style="margin-top:18px">Thêm hàng loạt <span class="fr">Ajouter en masse</span></h2>
           <p class="muted" style="font-size:13px;margin:4px 0 8px">Mỗi dòng: Tên, Mã số — vd: <b>Chị Hoa, 000001</b></p>
           <div class="add-form">
             <textarea id="bulkAdd" rows="5" style="border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit;background:var(--card);color:var(--ink)" placeholder="Chị Hoa, 000001&#10;Chị Lan, 000002&#10;Anh Minh, 000003"></textarea>
@@ -492,7 +491,7 @@
         </div>
         <div class="table-wrap"><table id="tblStaff"></table></div>
         <div class="card" style="margin-top:16px">
-          <h2 style="font-size:17px">Tài khoản quản lý <span class="fr">Comptes managers</span></h2>
+          <h2 class="card-h">Tài khoản quản lý <span class="fr">Comptes managers</span></h2>
           <p class="muted" style="font-size:13px;margin:4px 0 8px">Chỉ để xem. Tạo tài khoản / đổi mật khẩu trong Supabase — xem RUNBOOK-5.3.</p>
           <div id="mgrList"></div>
         </div>
@@ -500,12 +499,12 @@
 
       <div id="atab-kiosk" style="display:none">
         <div class="card">
-          <h2 style="font-size:17px">Màn hình cửa (Kiosk) <span class="fr">Écran porte</span></h2>
+          <h2 class="card-h">Màn hình cửa (Kiosk) <span class="fr">Écran porte</span></h2>
           <p class="muted" style="font-size:13px;margin:4px 0 8px">Mở link này trên máy tính bảng ở cửa mỗi tiệm, hoặc chép để gửi. Không gửi cho nhân viên — link chứa khóa bí mật của tiệm.</p>
           <div id="kioskLinks"></div>
         </div>
         <div class="card" style="margin-top:16px">
-          <h2 style="font-size:17px">Thông báo Telegram <span class="fr">Notifications</span></h2>
+          <h2 class="card-h">Thông báo Telegram <span class="fr">Notifications</span></h2>
           <p class="muted" style="font-size:13px;margin:4px 0 10px">Kiểm tra hệ thống thông báo đang chạy. Đổi giờ báo cáo hằng ngày: xem «Sổ tay vận hành».</p>
           <div class="roster-head">
             <button onclick="ADMIN.tgTest()">Gửi tin nhắn thử</button>
@@ -533,31 +532,8 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.10-3';   // bump on every deploy — powers the update banner
+const BUILD='v2026.07.10-5';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
-/* ---------- language mode: Auto (screen-size) / VI / VI·FR ---------- */
-const LANG = {
-  modes:['auto','vi','vifr'],
-  labels:{auto:'🌐 Auto', vi:'VI', vifr:'VI·FR'},
-  cur:'auto',
-  load(){ try{ this.cur = localStorage.getItem('wt-lang') || 'auto'; }catch(e){ this.cur='auto'; } },
-  apply(){
-    try{
-      document.body.classList.remove('lang-vi','lang-vifr');
-      if(this.cur==='vi')   document.body.classList.add('lang-vi');
-      if(this.cur==='vifr') document.body.classList.add('lang-vifr');
-      const b=document.getElementById('langBtn');
-      if(b) b.textContent=this.labels[this.cur];
-    }catch(e){}
-  },
-  cycle(){
-    this.cur=this.modes[(this.modes.indexOf(this.cur)+1)%3];
-    try{ localStorage.setItem('wt-lang', this.cur); }catch(e){}
-    this.apply();
-  }
-};
-LANG.load(); LANG.apply();
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
 function deviceId(){
@@ -597,12 +573,13 @@ function parisToTs(dayKey, hhmm){
 ===================================================== */
 const Q = new URLSearchParams(location.search);
 
-document.querySelectorAll('#mainNav button').forEach(b=>{
+document.querySelectorAll('#mainNav button[data-view]').forEach(b=>{
   b.onclick = ()=>{
-    document.querySelectorAll('#mainNav button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('#mainNav button[data-view]').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-    document.getElementById('view-'+b.dataset.view).classList.add('active');
+    const target = document.getElementById('view-'+b.dataset.view);
+    if(target) target.classList.add('active');
     if(b.dataset.view==='admin') ADMIN.enter();
   };
 });
@@ -1194,7 +1171,7 @@ const ADMIN = {
           <button class="btn btn-green btn-sm" onclick="ADMIN.decideLeave('${r.id}','approved',${after})">Duyệt · Approuver</button>
           <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose)" onclick="ADMIN.decideLeave('${r.id}','rejected',0)">Từ chối · Refuser</button>
         </div></div>`;
-    }).join('') : '<div class="card center muted" style="padding:20px">Không có đơn chờ duyệt · Aucune demande en attente</div>';
+    }).join('') : '<div class="card center" style="padding:22px"><div style="font-size:15px;font-weight:600;color:var(--green)">Tất cả đơn đã xử lý ✓</div><div class="muted" style="font-size:13px;margin-top:4px">Không có đơn nghỉ phép nào đang chờ · Aucune demande en attente</div></div>';
     document.getElementById('pendingQueue').innerHTML = pendHtml;
     document.getElementById('npLeave').innerHTML = pend.length ? pendHtml : '';
     document.getElementById('npLeaveWrap').style.display = pend.length ? '' : 'none';
@@ -1278,7 +1255,7 @@ const ADMIN = {
                         : f.kind==='missing-in'?'Quên chấm vào · Arrivée manquante'
                         : 'Vắng không phép · Absence non justifiée';
     document.getElementById('payWarnings').innerHTML = monthFlags.length
-      ? '<div class="card"><h2 style="font-size:16px">Cảnh báo trong tháng <span class="fr">Alertes du mois</span></h2>'+
+      ? '<div class="card"><h2 class="card-h">Cảnh báo trong tháng <span class="fr">Alertes du mois</span></h2>'+
         monthFlags.map(f=>{
           const e2=employees.find(x=>x.id===f.empId);
           return `<div class="leave-line"><b>${e2?e2.name:''}</b><span class="pill pill-amber">${kindLabel(f)}</span><span class="muted">${f.date||parisDay(f.ts)}</span></div>`;
@@ -1383,7 +1360,7 @@ const ADMIN = {
         return (e2&&e2.name.toLowerCase().includes(aq)) || (c.note&&c.note.toLowerCase().includes(aq)) || (c.by&&c.by.toLowerCase().includes(aq)); })
       .sort((a,b)=> this.auditSort==='asc' ? a.at-b.at : b.at-a.at);
     if(auditListArr.length===0){
-      al.innerHTML='<div class="card center muted" style="padding:36px">Chưa có chỉnh sửa nào<span class="fr">Aucune correction</span></div>';
+      al.innerHTML='<div class="card center" style="padding:36px"><div style="font-size:15px;font-weight:600">Chưa có chỉnh sửa nào</div><div class="muted" style="font-size:13px;margin-top:4px">Mọi điều chỉnh giờ công của quản lý sẽ hiện ở đây · Les corrections apparaîtront ici</div></div>';
     } else {
       al.innerHTML=auditListArr.map(c=>{
         const ev=events.find(x=>x.id===c.eventId);
