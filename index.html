@@ -532,7 +532,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.10-5';   // bump on every deploy — powers the update banner
+const BUILD='v2026.07.10-6';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -548,6 +548,7 @@ const parisDay   = ts => new Date(ts).toLocaleDateString('en-CA', {timeZone:TZ})
 const parisMonth = ts => parisDay(ts).slice(0,7);
 const parisTime  = ts => new Date(ts).toLocaleTimeString('fr-FR', {timeZone:TZ, hour:'2-digit', minute:'2-digit'});
 const parisNow   = () => new Date().toLocaleTimeString('fr-FR', {timeZone:TZ, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+const esc = t => String(t ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const fmtMin = m => { m=Math.max(0,Math.round(m)); return Math.floor(m/60)+'g'+String(m%60).padStart(2,'0'); };
 const fmtD = k => k.slice(8,10)+'/'+k.slice(5,7);
 const halfLabel = l => l.half==='am' ? ' (½ sáng · matin)' : l.half==='pm' ? ' (½ chiều · après-midi)' : '';
@@ -1165,7 +1166,7 @@ const ADMIN = {
       const bal = e?ptoBalance(e):0, after = bal - r.days;
       return `<div class="flag-item" style="background:var(--card);border-color:var(--line)">
         <b>${e?e.name:r.empId}</b> — xin nghỉ <b>${fmtD(r.startDate)} → ${fmtD(r.endDate)}</b> (${r.days} ngày)${halfLabel(r)}
-        ${r.note?`<br><span class="muted">«${r.note}»</span>`:''}
+        ${r.note?`<br><span class="muted">«${esc(r.note)}»</span>`:''}
         <br><span class="muted" style="font-size:12.5px">Số dư: ${bal.toFixed(1)} → sau khi duyệt: <b style="color:${after<0?'var(--rose)':'var(--green)'}">${after.toFixed(1)}</b></span>
         <div class="flag-resolve">
           <button class="btn btn-green btn-sm" onclick="ADMIN.decideLeave('${r.id}','approved',${after})">Duyệt · Approuver</button>
@@ -1239,13 +1240,18 @@ const ADMIN = {
       },0);
       const offD=mdays.filter(d=>dayoffOn(e.id,d)).length;
       const fc=monthFlags.filter(f=>f.empId===e.id).length;
-      payRows.push({name:e.name, daysW, totalM, full, partial, ptoD, offD, fc});
+      // equivalent days: a day ≥ 9h30 counts as 1; shorter days count as their fraction of 9h30
+      const eq=Object.values(dayMap).reduce((a,m)=>a+Math.min(1, m/FULL_DAY_MIN), 0);
+      // missed: unresolved no-show days this month (acknowledging one = manager excused it)
+      const missed=monthFlags.filter(f=>f.empId===e.id && f.kind==='no-show').length;
+      payRows.push({name:e.name, daysW, totalM, full, partial, ptoD, offD, fc, eq, missed});
     }
     this._pay={pm, rows:payRows, flags:monthFlags};
-    let prow='<tr><th>Tên · Nom</th><th>Ngày làm · Jours</th><th>Tổng giờ · Heures</th><th>Giờ (số) · Déc.</th><th>Đủ công · Compl.</th><th>Thiếu giờ · Incompl.</th><th>Phép · Congés</th><th>Nghỉ tuần · Repos</th><th>⚠</th></tr>';
+    let prow='<tr><th>Tên · Nom</th><th>Ngày làm · Jours</th><th>Tổng giờ · Heures</th><th>Công quy đổi · Équiv.</th><th>Đủ công · Compl.</th><th>Thiếu giờ · Incompl.</th><th>Phép · Congés</th><th>Nghỉ tuần · Repos</th><th>Vắng · Abs.</th><th>⚠</th></tr>';
     payRows.forEach(r=>{
-      prow += `<tr><td><b>${r.name}</b></td><td>${r.daysW}</td><td><b>${fmtMin(r.totalM)}</b></td><td>${(r.totalM/60).toFixed(2)}</td>
-        <td><b>${r.full}</b></td><td>${r.partial||'—'}</td><td>${r.ptoD||'—'}</td><td>${r.offD||'—'}</td>
+      prow += `<tr><td><b>${r.name}</b></td><td>${r.daysW}</td><td><b>${fmtMin(r.totalM)}</b></td><td><b>${r.eq.toFixed(2)}</b></td>
+        <td>${r.full}</td><td>${r.partial||'—'}</td><td>${r.ptoD||'—'}</td><td>${r.offD||'—'}</td>
+        <td>${r.missed?`<span class="pill pill-rose">${r.missed}</span>`:'—'}</td>
         <td>${r.fc?`<span class="pill pill-amber">${r.fc}</span>`:'—'}</td></tr>`;
     });
     document.getElementById('tblPay').innerHTML = prow;
@@ -1376,7 +1382,7 @@ const ADMIN = {
           : 'Xác nhận';
         if(c.kind==='edit')    what=`Sửa giờ ${ev&&ev.type==='in'?'VÀO':'RA'}: ${parisTime(c.oldTs)} → <b>${parisTime(c.newTs)}</b> (${parisDay(c.newTs)})`;
         if(c.kind==='void')    what=`Hủy lượt chấm lúc ${c.oldTs?parisTime(c.oldTs):''} ${c.oldTs?'('+parisDay(c.oldTs)+')':''}`;
-        return `<div class="audit-item"><b>${nm}</b> — ${what}${c.note?`<br><span class="muted">«${c.note}»</span>`:''}
+        return `<div class="audit-item"><b>${nm}</b> — ${what}${c.note?`<br><span class="muted">«${esc(c.note)}»</span>`:''}
           <br><span class="muted" style="font-size:12.5px">bởi ${c.by} · ${parisDay(c.at)} ${parisTime(c.at)} · bản gốc được giữ nguyên</span></div>`;
       }).join('');
     }
@@ -1727,9 +1733,9 @@ const ADMIN = {
   _csvRows(sep){
     const p=this._pay; if(!p) return '';
     const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
-    const head=['Tên / Nom','Ngày làm / Jours','Tổng giờ / Heures','Giờ thập phân / Décimal','Đủ công 9g30 / Complets','Thiếu giờ / Incomplets','Phép / Congés','Nghỉ tuần / Repos','Cảnh báo / Alertes'];
+    const head=['Tên / Nom','Ngày làm / Jours travaillés','Tổng giờ / Heures totales','Giờ thập phân / Décimal','Ngày công quy đổi / Jours équivalents','Đủ công 9g30 / Jours complets','Thiếu giờ / Incomplets','Nghỉ phép / Congés (jours)','Nghỉ tuần / Repos hebdo','Vắng không phép / Absences','Cảnh báo / Alertes'];
     const lines=[head.map(q).join(sep)];
-    p.rows.forEach(r=>lines.push([q(r.name),r.daysW,q(fmtMin(r.totalM)),(r.totalM/60).toFixed(2),r.full,r.partial,r.ptoD,r.offD,r.fc].join(sep)));
+    p.rows.forEach(r=>lines.push([q(r.name),r.daysW,q(fmtMin(r.totalM)),(r.totalM/60).toFixed(2),r.eq.toFixed(2),r.full,r.partial,r.ptoD,r.offD,r.missed,r.fc].join(sep)));
     if(p.flags.length){
       lines.push(''); lines.push(q('CẢNH BÁO CHƯA XỬ LÝ — các ngày này tính 0 giờ / ALERTES NON TRAITÉES'));
       const kl=f=>f.kind==='missing-out'?'Quên chấm ra':f.kind==='missing-in'?'Quên chấm vào':'Vắng không phép';
