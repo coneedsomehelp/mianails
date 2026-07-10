@@ -49,8 +49,6 @@
   .fr{display:block;font-size:.72em;font-weight:500;color:var(--ink-soft);letter-spacing:.01em}
   .fr-inline{font-size:.82em;font-weight:500;color:var(--ink-soft)}
   body.lang-vi .fr,body.lang-vi .fr-inline{display:none !important}
-  body.lang-vifr .fr{display:block !important}
-  body.lang-vifr .fr-inline{display:inline !important}
   header{padding:14px 16px 0;max-width:1280px;margin:0 auto}
   .brand{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
   .brand h1{font-size:19px;font-weight:800;letter-spacing:-.02em}
@@ -535,28 +533,31 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.10-2';   // bump on every deploy — powers the update banner
+const BUILD='v2026.07.10-3';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- language mode: Auto (screen-size) / VI / VI·FR ---------- */
 const LANG = {
   modes:['auto','vi','vifr'],
   labels:{auto:'🌐 Auto', vi:'VI', vifr:'VI·FR'},
-  cur: localStorage.getItem('wt-lang') || 'auto',
+  cur:'auto',
+  load(){ try{ this.cur = localStorage.getItem('wt-lang') || 'auto'; }catch(e){ this.cur='auto'; } },
   apply(){
-    document.body.classList.remove('lang-vi','lang-vifr');
-    if(this.cur==='vi')   document.body.classList.add('lang-vi');
-    if(this.cur==='vifr') document.body.classList.add('lang-vifr');
-    const b=document.getElementById('langBtn');
-    if(b) b.textContent=this.labels[this.cur];
+    try{
+      document.body.classList.remove('lang-vi','lang-vifr');
+      if(this.cur==='vi')   document.body.classList.add('lang-vi');
+      if(this.cur==='vifr') document.body.classList.add('lang-vifr');
+      const b=document.getElementById('langBtn');
+      if(b) b.textContent=this.labels[this.cur];
+    }catch(e){}
   },
   cycle(){
     this.cur=this.modes[(this.modes.indexOf(this.cur)+1)%3];
-    localStorage.setItem('wt-lang', this.cur);
+    try{ localStorage.setItem('wt-lang', this.cur); }catch(e){}
     this.apply();
   }
 };
-LANG.apply();
+LANG.load(); LANG.apply();
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
 function deviceId(){
