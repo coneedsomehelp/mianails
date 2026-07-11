@@ -31,9 +31,9 @@
     --rose:#DC2626;  --rose-soft:#FEE2E2;   /* danger/out: true red */
     --amber:#A8701A; --amber-soft:#F7ECD9;
     --radius:16px;
-    --sh-sm:0 1px 3px rgba(15,23,42,.06);
+    --sh-sm:0 1px 2px rgba(16,24,40,.05);
     --sh-md:0 4px 6px rgba(15,23,42,.07);
-    --sh-lg:0 10px 15px rgba(15,23,42,.08);
+    --sh-lg:0 4px 12px rgba(16,24,40,.08);
     --sh-accent:0 4px 14px rgba(var(--accent-rgb),.25);
     --font-ui:'Inter',system-ui,-apple-system,sans-serif;
     --font-display:'Inter',system-ui,sans-serif;
@@ -62,7 +62,7 @@
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--sh-sm)}
   .btn{display:block;width:100%;border:none;border-radius:12px;cursor:pointer;font:inherit;font-weight:600;padding:16px;font-size:17px;text-align:center;transition:all .2s ease-out}
   .btn:active{transform:scale(.98)}
-  .btn-ink{background:var(--grad);color:#fff;box-shadow:var(--sh-accent)}
+  .btn-ink{background:var(--ink);color:#fff;box-shadow:var(--sh-sm)}
   .btn-ink:hover{filter:brightness(1.06)}
   .btn-green{background:var(--green);color:#fff}.btn-rose{background:var(--rose);color:#fff}
   .btn-ghost{background:transparent;color:var(--ink-soft);font-weight:600;font-size:14px;padding:10px}
@@ -136,6 +136,7 @@
     .admin-side.open{transform:translateX(0)}
     .side-scrim.open{display:block;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:49}
     #view-admin .menu-btn{position:fixed;bottom:18px;left:18px;z-index:48;border-radius:99px;padding:13px 18px;box-shadow:var(--sh-lg)}
+    #updBar{bottom:86px !important}
   }
   .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--sh-sm)}
@@ -327,6 +328,7 @@
           </div>
           <div id="lvUpcoming"></div>
           <div id="lvPending"></div>
+          <div id="lvRecent"></div>
           <h2 class="card-h" style="margin-top:18px">Xin nghỉ phép <span class="fr">Demander un congé</span></h2>
           <div class="add-form" style="margin-top:10px;max-width:none">
             <label class="muted" style="font-size:13px;font-weight:700">Từ ngày · Du</label>
@@ -339,7 +341,7 @@
               <option value="am">Nửa ngày — buổi sáng · Demi-journée matin</option>
               <option value="pm">Nửa ngày — buổi chiều · Demi-journée après-midi</option>
             </select>
-            <input type="text" id="lvNote" placeholder="Lý do · Motif (tùy chọn)">
+            <input type="text" id="lvNote" placeholder="Lý do · Motif (bắt buộc · obligatoire)">
             <button class="btn btn-green" onclick="EMP.submitLeave()">Gửi đơn · Envoyer la demande</button>
             <div class="errline" id="lvErr"></div>
           </div>
@@ -532,7 +534,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.10-6';   // bump on every deploy — powers the update banner
+const BUILD='v2026.07.10-9';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -815,7 +817,7 @@ const EMP = {
   },
   async openLeave(){
     const err=document.getElementById('lvIdErr');
-    const [lg, ms] = await Promise.all([
+    const [lg, ms, hol] = await Promise.all([
       sb.rpc('leave_get', {p_login_code:this.lvDigits}),
       sb.rpc('my_summary', {p_login_code:this.lvDigits}).then(r=>r, ()=>({data:null}))
     ]);
@@ -841,6 +843,17 @@ const EMP = {
     (d.approved||[]).forEach(l=>up.push(`<div class="leave-line"><span class="pill pill-green">Nghỉ phép ${fmtD(l.start)}–${fmtD(l.end)}${halfLabel(l)} · Congé</span></div>`));
     document.getElementById('lvUpcoming').innerHTML = up.length
       ? '<p class="muted" style="font-size:13px;font-weight:700;margin-top:6px">Sắp tới · À venir</p>'+up.join('') : '';
+    sb.rpc('leave_recent', {p_code: code}).then(({data:rec})=>{
+      const box=document.getElementById('lvRecent');
+      if(box && rec && rec.length){
+        box.innerHTML = '<p class="muted" style="font-size:13px;font-weight:700;margin-top:10px">Kết quả đơn gần đây · Décisions récentes</p>'
+          + rec.map(l=>`<div class="leave-line">
+              <span class="pill ${l.status==='approved'?'pill-green':'pill-rose'}">${l.status==='approved'?'Đã duyệt':'Từ chối'}</span>
+              <span style="font-size:13.5px">${fmtD(l.start_date)} → ${fmtD(l.end_date)} (${l.days} ngày${l.half==='am'?', sáng':l.half==='pm'?', chiều':''})</span>
+              ${l.decision_note?`<span class="muted" style="font-size:12.5px;flex-basis:100%">«${esc(l.decision_note)}»</span>`:''}
+            </div>`).join('');
+      } else if(box) box.innerHTML='';
+    }).catch(()=>{ /* 14_leave_decisions.sql not run yet — section stays hidden */ });
     document.getElementById('lvPending').innerHTML = (d.pending||[]).length
       ? '<p class="muted" style="font-size:13px;font-weight:700;margin-top:6px">Chờ duyệt · En attente</p>' +
         d.pending.map(l=>`<div class="leave-line"><span class="pill pill-amber">${fmtD(l.start)}–${fmtD(l.end)} (${l.days} ngày)${halfLabel(l)}</span>
@@ -854,6 +867,7 @@ const EMP = {
     const half=document.getElementById('lvHalf').value;
     const note=document.getElementById('lvNote').value.trim();
     if(!start){ err.innerHTML='Chọn ngày bắt đầu<span class="fr">Choisissez la date</span>'; return; }
+    if(!note){ err.innerHTML='Cần ghi lý do xin nghỉ<span class="fr">Le motif est obligatoire</span>'; return; }
     const {data, error} = await sb.rpc('leave_request',
       {p_login_code:this.lvDigits, p_start:start, p_end:end, p_half: half==='full'?null:half, p_note:note});
     if(error){ err.textContent='Lỗi kết nối · Erreur réseau'; return; }
@@ -878,7 +892,7 @@ const EMP = {
    ADMIN — authenticated managers. Reads raw tables through
    RLS and reuses the trial-tested ledger math verbatim.
 ===================================================== */
-let employees=[], events=[], corrections=[], leave=[], shops=[], mgrNames={}, managersList=[];
+let employees=[], events=[], corrections=[], leave=[], shops=[], mgrNames={}, managersList=[], holidays=[];
 
 function effectiveEvents(){
   const edits={}, voids=new Set(), addOuts={}, addIns={}, acks=new Set();
@@ -902,6 +916,7 @@ function buildSessions(){
   const sessions=[], flags=[];
   const today = parisDay(Date.now());
   for(const [empId, list] of Object.entries(byEmp)){
+    list.sort((a,b)=>a.ts-b.ts);   // pairing REQUIRES chronological order — never trust fetch order or edited times
     let open=null;
     for(const ev of list){
       if(ev.type==='in'){
@@ -1014,15 +1029,17 @@ async function loadAll(){
   const corSince = new Date(Date.now() - 95*864e5).toISOString();
   const [emps, pns, cors, lvs, mgrs, shp] = await Promise.all([
     sb.from('employees').select('*').order('id'),
-    sb.from('punches').select('*').gte('ts', since).limit(20000),
+    sb.from('punches').select('*').gte('ts', since).order('ts', {ascending:true}).limit(20000),
     sb.from('corrections').select('*').gte('created_at', corSince).limit(20000),
     sb.from('leave').select('*').limit(20000),
     sb.from('managers').select('user_id, name, role, shop_id'),
+    sb.from('holidays').select('date, name'),
     sb.from('shops').select('id, name, kiosk_key').order('id'),
   ]);
   shops = shp.data || [];
   mgrNames = {}; (mgrs.data||[]).forEach(m=>mgrNames[m.user_id]=m.name);
   managersList = mgrs.data || [];
+  holidays = hol.data || [];   // empty until 13_holidays.sql is run — export then splits Sundays only
   employees = (emps.data||[]).map(e=>({ id:String(e.id), name:e.name, pin:e.login_code,
     ptoOpening:+e.pto_opening, ptoStart:String(e.pto_start_month).slice(0,7), active:e.active }));
   events = (pns.data||[]).map(p=>({ id:p.id, empId:String(p.employee_id), shop:p.shop_id,
@@ -1052,7 +1069,24 @@ const ADMIN = {
       email: document.getElementById('loginEmail').value.trim(),
       password: document.getElementById('loginPass').value
     });
-    if(error){ err.textContent='Đăng nhập thất bại · Échec de connexion'; return; }
+    if(error){
+      this._fails = (this._fails||0) + 1;
+      if(this._fails >= 3){
+        const btn=document.querySelector('#adminLogin .btn');
+        let left=30;
+        if(btn){ btn.disabled=true;
+          const t=setInterval(()=>{
+            btn.textContent=`Thử lại sau ${left}s · Réessayer dans ${left}s`;
+            if(left--<=0){ clearInterval(t); btn.disabled=false; btn.textContent='Đăng nhập · Connexion'; this._fails=0; }
+          },1000);
+        }
+        err.textContent='Sai nhiều lần — chờ 30 giây · Trop d\'essais, patientez 30s';
+      } else {
+        err.textContent='Đăng nhập thất bại · Échec de connexion';
+      }
+      return;
+    }
+    this._fails = 0;
     this.user = data.user;
     this.showApp();
   },
@@ -1100,11 +1134,13 @@ const ADMIN = {
       const hasFlag = flags.some(f=>f.empId===e.id);
       if(live) inCount++; else if(!isToday && mins>0) inCount++;
       if(mins>=FULL_DAY_MIN) fullCount++;
-      const st = isToday
-        ? (live ? `<span class="pill pill-green">● Tiệm ${live.shop} · Salon ${live.shop}</span>`
-                : `<span class="pill pill-rose">○ Vắng · Absent</span>`)
-        : (mins>0 ? `<span class="pill pill-green">Có làm · Travaillé</span>`
-                  : `<span class="pill pill-rose">Nghỉ · Absent</span>`);
+      const isOff = dayoffOn(e.id, vd), isPto = ptoOn(e.id, vd);
+      let st;
+      if(live)          st = `<span class="pill pill-green">● Tiệm ${live.shop} · Salon ${live.shop}</span>`;
+      else if(mins>0)   st = `<span class="pill pill-green">Có làm · Travaillé</span>`;
+      else if(isPto)    st = `<span class="pill" style="background:var(--green-soft);color:var(--green)">Nghỉ phép · Congé</span>`;
+      else if(isOff)    st = `<span class="pill" style="background:var(--muted);color:var(--ink-soft)">Nghỉ tuần · Repos</span>`;
+      else              st = `<span class="pill pill-rose">${isToday?'○ Vắng · Absent':'Nghỉ · Absent'}</span>`;
       const firstDay = sessions.filter(s=>s.empId===e.id && parisDay(s.start)===vd).sort((a,b)=>a.start-b.start)[0];
       rows += `<tr class="clickable" onclick="ADMIN.selectEmp('${e.id}')"><td><b>${e.name}</b>${hasFlag?' <span class="pill pill-amber">⚠</span>':''}</td>
         <td>${st}</td><td><b>${fmtMin(mins)}</b>${mins>=FULL_DAY_MIN?' <span class="pill pill-green">9g30</span>':''}</td>
@@ -1193,7 +1229,7 @@ const ADMIN = {
     }).join('')+'</tr>';
     for(const e of active){
       const offCnt = DW.filter((w,i)=>{ const d=addDays(mon,i); return dayoffOn(e.id,d)||ptoOn(e.id,d); }).length;
-      rrows += `<tr><td><b>${e.name}</b>${offCnt===0?' <span class="pill pill-amber" style="font-size:10.5px;padding:1px 7px">chưa nghỉ</span>':''}</td>`+DW.map((w,i)=>{
+      rrows += `<tr><td><b>${e.name}</b>${(offCnt===0 && (this.weekOffset||0)>=0)?' <span class="pill pill-amber" style="font-size:10.5px;padding:1px 7px">chưa nghỉ</span>':''}</td>`+DW.map((w,i)=>{
         const d=addDays(mon,i);
         const pr = leave.find(l=>l.type==='pto'&&l.empId===e.id&&l.status==='approved'&&l.startDate<=d&&l.endDate>=d);
         if(pr) return `<td class="center"><span class="cell-chip chip-pto">${pr.half?'½ Phép':'Phép'}</span></td>`;
@@ -1224,6 +1260,7 @@ const ADMIN = {
     const dim=new Date(Date.UTC(py,pM,0)).getUTCDate();
     const mdays=Array.from({length:dim},(_,i)=>pm+'-'+String(i+1).padStart(2,'0'));
     const monthFlags=flags.filter(f=>(f.date?f.date.slice(0,7):parisMonth(f.ts))===pm);
+    const holSet = new Set(holidays.map(h=>h.date));
     const payRows=[];
     for(const e of active){
       const dayMap={};
@@ -1242,15 +1279,23 @@ const ADMIN = {
       const fc=monthFlags.filter(f=>f.empId===e.id).length;
       // equivalent days: a day ≥ 9h30 counts as 1; shorter days count as their fraction of 9h30
       const eq=Object.values(dayMap).reduce((a,m)=>a+Math.min(1, m/FULL_DAY_MIN), 0);
+      // hour categories for differential pay: holiday > Sunday > normal (accountant applies rates)
+      let sunM=0, holM=0;
+      for(const [d, mm] of Object.entries(dayMap)){
+        if(holSet.has(d)) holM += mm;
+        else if(new Date(d+'T12:00:00Z').getUTCDay()===0) sunM += mm;
+      }
+      const normM = totalM - sunM - holM;
       // missed: unresolved no-show days this month (acknowledging one = manager excused it)
       const missed=monthFlags.filter(f=>f.empId===e.id && f.kind==='no-show').length;
-      payRows.push({name:e.name, daysW, totalM, full, partial, ptoD, offD, fc, eq, missed});
+      payRows.push({name:e.name, daysW, totalM, full, partial, ptoD, offD, fc, eq, missed, normM, sunM, holM});
     }
     this._pay={pm, rows:payRows, flags:monthFlags};
-    let prow='<tr><th>Tên · Nom</th><th>Ngày làm · Jours</th><th>Tổng giờ · Heures</th><th>Công quy đổi · Équiv.</th><th>Đủ công · Compl.</th><th>Thiếu giờ · Incompl.</th><th>Phép · Congés</th><th>Nghỉ tuần · Repos</th><th>Vắng · Abs.</th><th>⚠</th></tr>';
+    let prow='<tr><th>Tên · Nom</th><th>Ngày làm · Jours</th><th>Tổng giờ · Heures</th><th>Công quy đổi · Équiv.</th><th>Đủ công · Compl.</th><th>Thiếu giờ · Incompl.</th><th>Phép · Congés</th><th>Nghỉ tuần · Repos</th><th>CN / Lễ · Dim/Fér</th><th>Vắng · Abs.</th><th>⚠</th></tr>';
     payRows.forEach(r=>{
       prow += `<tr><td><b>${r.name}</b></td><td>${r.daysW}</td><td><b>${fmtMin(r.totalM)}</b></td><td><b>${r.eq.toFixed(2)}</b></td>
         <td>${r.full}</td><td>${r.partial||'—'}</td><td>${r.ptoD||'—'}</td><td>${r.offD||'—'}</td>
+        <td>${(r.sunM||r.holM)?`${(r.sunM/60).toFixed(1)}g / ${(r.holM/60).toFixed(1)}g`:'—'}</td>
         <td>${r.missed?`<span class="pill pill-rose">${r.missed}</span>`:'—'}</td>
         <td>${r.fc?`<span class="pill pill-amber">${r.fc}</span>`:'—'}</td></tr>`;
     });
@@ -1694,9 +1739,16 @@ const ADMIN = {
   },
   async decideLeave(id, status, after){
     if(status==='approved' && after<0 && !confirm('Đơn này vượt số dư (sẽ âm). Vẫn duyệt?\nSolde négatif — approuver quand même ?')) return;
-    if(status==='rejected' && !confirm('Từ chối đơn này? / Refuser cette demande ?')) return;
+    let decision_note = null;
+    if(status==='rejected'){
+      const n = prompt('Lý do từ chối — nhân viên sẽ đọc được (để trống nếu không cần)\nMotif du refus — visible par l\'employé :', '');
+      if(n===null) return;   // cancel = abort the rejection
+      decision_note = n.trim() || null;
+    }
+    const payload = {status, decided_by:this.user.id, decided_at:new Date().toISOString()};
+    if(status==='rejected') payload.decision_note = decision_note;
     const {error} = await sb.from('leave')
-      .update({status, decided_by:this.user.id, decided_at:new Date().toISOString()})
+      .update(payload)
       .eq('id',id).eq('status','pending');
     if(error) alert('Lỗi: '+error.message);
     this.refresh();
@@ -1733,9 +1785,9 @@ const ADMIN = {
   _csvRows(sep){
     const p=this._pay; if(!p) return '';
     const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
-    const head=['Tên / Nom','Ngày làm / Jours travaillés','Tổng giờ / Heures totales','Giờ thập phân / Décimal','Ngày công quy đổi / Jours équivalents','Đủ công 9g30 / Jours complets','Thiếu giờ / Incomplets','Nghỉ phép / Congés (jours)','Nghỉ tuần / Repos hebdo','Vắng không phép / Absences','Cảnh báo / Alertes'];
+    const head=['Tên / Nom','Ngày làm / Jours travaillés','Tổng giờ / Heures totales','Giờ thập phân / Décimal','Giờ thường / Heures normales','Giờ Chủ nhật / Heures dimanche','Giờ ngày lễ / Heures jours fériés','Ngày công quy đổi / Jours équivalents','Đủ công 9g30 / Jours complets','Thiếu giờ / Incomplets','Nghỉ phép / Congés (jours)','Nghỉ tuần / Repos hebdo','Vắng không phép / Absences','Cảnh báo / Alertes'];
     const lines=[head.map(q).join(sep)];
-    p.rows.forEach(r=>lines.push([q(r.name),r.daysW,q(fmtMin(r.totalM)),(r.totalM/60).toFixed(2),r.eq.toFixed(2),r.full,r.partial,r.ptoD,r.offD,r.missed,r.fc].join(sep)));
+    p.rows.forEach(r=>lines.push([q(r.name),r.daysW,q(fmtMin(r.totalM)),(r.totalM/60).toFixed(2),(r.normM/60).toFixed(2),(r.sunM/60).toFixed(2),(r.holM/60).toFixed(2),r.eq.toFixed(2),r.full,r.partial,r.ptoD,r.offD,r.missed,r.fc].join(sep)));
     if(p.flags.length){
       lines.push(''); lines.push(q('CẢNH BÁO CHƯA XỬ LÝ — các ngày này tính 0 giờ / ALERTES NON TRAITÉES'));
       const kl=f=>f.kind==='missing-out'?'Quên chấm ra':f.kind==='missing-in'?'Quên chấm vào':'Vắng không phép';
