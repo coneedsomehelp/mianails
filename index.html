@@ -534,7 +534,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.10-10';   // bump on every deploy — powers the update banner
+const BUILD='v2026.07.10-11';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -843,7 +843,7 @@ const EMP = {
     (d.approved||[]).forEach(l=>up.push(`<div class="leave-line"><span class="pill pill-green">Nghỉ phép ${fmtD(l.start)}–${fmtD(l.end)}${halfLabel(l)} · Congé</span></div>`));
     document.getElementById('lvUpcoming').innerHTML = up.length
       ? '<p class="muted" style="font-size:13px;font-weight:700;margin-top:6px">Sắp tới · À venir</p>'+up.join('') : '';
-    sb.rpc('leave_recent', {p_code: code}).then(({data:rec})=>{
+    sb.rpc('leave_recent', {p_code: this.lvDigits}).then(({data:rec})=>{
       const box=document.getElementById('lvRecent');
       if(box && rec && rec.length){
         box.innerHTML = '<p class="muted" style="font-size:13px;font-weight:700;margin-top:10px">Kết quả đơn gần đây · Décisions récentes</p>'
