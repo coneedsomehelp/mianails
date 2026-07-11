@@ -534,7 +534,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.10-9';   // bump on every deploy — powers the update banner
+const BUILD='v2026.07.10-10';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -817,7 +817,7 @@ const EMP = {
   },
   async openLeave(){
     const err=document.getElementById('lvIdErr');
-    const [lg, ms, hol] = await Promise.all([
+    const [lg, ms] = await Promise.all([
       sb.rpc('leave_get', {p_login_code:this.lvDigits}),
       sb.rpc('my_summary', {p_login_code:this.lvDigits}).then(r=>r, ()=>({data:null}))
     ]);
@@ -1027,7 +1027,7 @@ function buildDeviceFlags(acks){
 async function loadAll(){
   const since = new Date(Date.now() - 62*864e5).toISOString();
   const corSince = new Date(Date.now() - 95*864e5).toISOString();
-  const [emps, pns, cors, lvs, mgrs, shp] = await Promise.all([
+  const [emps, pns, cors, lvs, mgrs, hol, shp] = await Promise.all([
     sb.from('employees').select('*').order('id'),
     sb.from('punches').select('*').gte('ts', since).order('ts', {ascending:true}).limit(20000),
     sb.from('corrections').select('*').gte('created_at', corSince).limit(20000),
