@@ -161,7 +161,8 @@
   .punch-type-in{color:var(--green);font-weight:700}.punch-type-out{color:var(--rose);font-weight:700}
   .corrected-badge{font-size:11px;font-weight:600;color:var(--amber);background:var(--amber-soft);border-radius:6px;padding:2px 6px}
   .audit-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:14px;box-shadow:var(--sh-sm)}
-  .add-form{display:grid;gap:10px;max-width:400px}
+  .add-form{display:grid;gap:10px;max-width:400px;min-width:0}
+  .add-form textarea{resize:vertical;min-width:0;width:100%;box-sizing:border-box}
   .add-form input,.add-form select,.add-form textarea{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit;background:var(--card);color:var(--ink);transition:border-color .15s,box-shadow .15s}
   .add-form input:focus,.add-form select:focus,.add-form textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.15)}
   .roster-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
@@ -418,12 +419,8 @@
           <div class="stat"><b id="statParis">–</b><span>Giờ Paris · Heure de Paris</span></div>
         </div>
         <p class="muted" style="font-size:13px;margin-bottom:8px">Nhấn vào tên để xem &amp; sửa lượt chấm. <span class="fr-inline">Touchez un nom pour corriger les pointages.</span></p>
+        <div id="shopNow" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px"></div>
         <div class="table-wrap"><table id="tblToday"></table></div>
-      </div>
-
-      <div id="atab-month" style="display:none">
-        <div class="table-wrap"><table id="tblMonth"></table></div>
-        <p class="muted" style="font-size:13px;margin-top:10px">Ngày công đủ = có mặt ≥ 9g30. Ngày có cảnh báo chưa xử lý tính 0 giờ. <span class="fr-inline">Journée complète = présence ≥ 9h30.</span></p>
       </div>
 
       <div id="atab-leave" style="display:none">
@@ -433,6 +430,11 @@
           <p class="muted" style="font-size:13px;margin:4px 0 10px">Nhấn ô để gán / bỏ ngày nghỉ tuần. Ô xanh = nghỉ phép đã duyệt.</p>
           <div class="roster-head" id="rosterHead"></div>
           <div class="table-wrap"><table id="tblRoster"></table></div>
+        </div>
+        <div class="card">
+          <h2 class="card-h">Quyết định gần đây <span class="fr">Décisions récentes</span></h2>
+          <p class="muted" style="font-size:13px;margin:4px 0 10px">Ai đã duyệt / từ chối đơn nghỉ phép. <span class="fr-inline">Qui a décidé, et quand.</span></p>
+          <div class="table-wrap"><table id="tblDecided"></table></div>
         </div>
 
       </div>
@@ -534,7 +536,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.22-01';   // bump on every deploy — powers the update banner
+const BUILD='v2026.07.22-02';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -962,6 +964,14 @@ function minutesForDay(empId, dayKey, sessions){
 }
 const dayoffOn = (empId,d)=>leave.some(l=>l.type==='dayoff'&&l.empId===empId&&l.date===d);
 const ptoOn = (empId,d)=>leave.some(l=>l.type==='pto'&&l.empId===empId&&l.status==='approved'&&l.startDate<=d&&l.endDate>=d);
+/* Minutes needed for a COMPLETE day: 9h30 normally, 4h45 against an approved
+   half-day PTO, 0 on a full PTO day or a weekly day off (nothing is owed). */
+function requiredMin(empId, d){
+  if(dayoffOn(empId,d)) return 0;
+  const cov = leave.filter(l=>l.type==='pto'&&l.empId===empId&&l.status==='approved'&&l.startDate<=d&&l.endDate>=d)
+                   .reduce((a,l)=>a+(l.half?0.5:1), 0);
+  return Math.max(0, Math.round(FULL_DAY_MIN * (1 - Math.min(1, cov))));
+}
 function ptoAccrued(e){
   const cur = parisMonth(Date.now()); const st = e.ptoStart || cur;
   const months = (+cur.slice(0,4)-+st.slice(0,4))*12 + (+cur.slice(5,7)-+st.slice(5,7)) + 1;
@@ -1064,6 +1074,7 @@ async function loadAll(){
   leave = (lvs.data||[]).map(l=>({ id:l.id, type:l.type, empId:String(l.employee_id),
     date:l.date, startDate:l.start_date, endDate:l.end_date, half:l.half, days:l.days?+l.days:null,
     note:l.note, status:l.status, at:Date.parse(l.requested_at),
+    decisionNote:l.decision_note,
     decidedAt:l.decided_at?Date.parse(l.decided_at):null, by:l.decided_by?(mgrNames[l.decided_by]||'Quản lý'):null }));
 }
 
@@ -1138,6 +1149,20 @@ const ADMIN = {
        <input type="date" class="num-input" style="width:auto" value="${vd}" max="${today}" onchange="ADMIN.setDay(this.value)">
        <button onclick="ADMIN.shiftDay(1)" ${isToday?'disabled':''}>›</button>
        ${!isToday?`<button onclick="ADMIN.setDay(null)">Hôm nay · Aujourd'hui</button>`:''}`;
+    /* ----- who is in which salon — shops come from the DB, so a 3rd salon appears by itself ----- */
+    document.getElementById('shopNow').innerHTML = shops.map(sh=>{
+      const inShop = isToday ? sessions.filter(s=>s.end===null && s.shop===sh.id)
+                             : sessions.filter(s=>parisDay(s.start)===vd && s.shop===sh.id);
+      const names = [...new Set(inShop.map(s=>(employees.find(x=>x.id===s.empId)||{}).name).filter(Boolean))]
+                    .sort((a,b)=>a.localeCompare(b,'vi'));
+      return `<div class="card" style="flex:1;min-width:170px;padding:12px 14px">
+        <div style="font-size:13px;font-weight:700">${esc(sh.name||('Tiệm '+sh.id))}</div>
+        <div style="font-size:24px;font-weight:800;color:var(--accent);line-height:1.2">${names.length}</div>
+        <div class="muted" style="font-size:12px">${isToday?'đang có mặt · présents':'đã làm · ont travaillé'}</div>
+        <div style="font-size:12.5px;margin-top:6px;line-height:1.55">${names.length?names.map(esc).join('<br>'):'—'}</div>
+      </div>`;
+    }).join('');
+
     let inCount=0, fullCount=0;
     let rows=`<tr><th>Tên · Nom</th><th>${isToday?'Trạng thái · Statut':'Ngày '+fmtD(vd)}</th><th>Giờ · Heures</th><th>Vào lúc · Arrivée</th></tr>`;
     for(const e of active){
@@ -1145,17 +1170,21 @@ const ADMIN = {
       const live = isToday ? sessions.find(s=>s.empId===e.id && s.end===null) : null;
       const hasFlag = flags.some(f=>f.empId===e.id);
       if(live) inCount++; else if(!isToday && mins>0) inCount++;
-      if(mins>=FULL_DAY_MIN) fullCount++;
+      const req = requiredMin(e.id, vd);         // 9h30, or 4h45 on a half-day PTO
+      const done = req>0 && mins>=req;
+      if(done) fullCount++;
       const isOff = dayoffOn(e.id, vd), isPto = ptoOn(e.id, vd);
       let st;
       if(live)          st = `<span class="pill pill-green">● Tiệm ${live.shop} · Salon ${live.shop}</span>`;
-      else if(mins>0)   st = `<span class="pill pill-green">Có làm · Travaillé</span>`;
+      else if(mins>0)   st = done
+                          ? `<span class="pill pill-green">Có làm · Travaillé</span>`
+                          : `<span class="pill pill-amber">Thiếu giờ · Incomplet</span>`;
       else if(isPto)    st = `<span class="pill" style="background:var(--green-soft);color:var(--green)">Nghỉ phép · Congé</span>`;
       else if(isOff)    st = `<span class="pill" style="background:var(--muted);color:var(--ink-soft)">Nghỉ tuần · Repos</span>`;
       else              st = `<span class="pill pill-rose">${isToday?'○ Vắng · Absent':'Nghỉ · Absent'}</span>`;
       const firstDay = sessions.filter(s=>s.empId===e.id && parisDay(s.start)===vd).sort((a,b)=>a.start-b.start)[0];
       rows += `<tr class="clickable" onclick="ADMIN.selectEmp('${e.id}')"><td><b>${e.name}</b>${hasFlag?' <span class="pill pill-amber">⚠</span>':''}</td>
-        <td>${st}</td><td><b>${fmtMin(mins)}</b>${mins>=FULL_DAY_MIN?' <span class="pill pill-green">9g30</span>':''}</td>
+        <td>${st}</td><td><b>${fmtMin(mins)}</b>${done?` <span class="pill pill-green">${fmtMin(req)}</span>`:''}</td>
         <td>${firstDay?parisTime(firstDay.start):'—'}</td></tr>`;
       if(this.selectedEmp===e.id){
         rows += `<tr class="detail-tr"><td colspan="4">${this.dayDetailHtml(e, vd)}</td></tr>`;
@@ -1187,24 +1216,6 @@ const ADMIN = {
     } else { os.style.display='none'; os.innerHTML=''; }
 
 
-    /* ----- month ----- */
-    const mo = parisMonth(Date.now());
-    let mrows='<tr><th>Tên · Nom</th><th>Tổng giờ · Heures</th><th>Ngày làm · Jours</th><th>Đủ công · Complets</th><th>Thiếu giờ · Incompl.</th><th>Chưa xử lý · À traiter</th></tr>';
-    for(const e of active){
-      const dayMap={};
-      sessions.filter(s=>s.empId===e.id && parisMonth(s.start)===mo)
-              .forEach(s=>{ const d=parisDay(s.start); dayMap[d]=(dayMap[d]||0)+sessMin(s); });
-      const days=Object.keys(dayMap).length;
-      const total=Object.values(dayMap).reduce((a,b)=>a+b,0);
-      const full=Object.values(dayMap).filter(m=>m>=FULL_DAY_MIN).length;
-      const partial=Object.values(dayMap).filter(m=>m>0&&m<FULL_DAY_MIN).length;
-      const nf=flags.filter(f=>f.empId===e.id).length;
-      mrows += `<tr><td><b>${e.name}</b></td><td><b>${fmtMin(total)}</b></td><td>${days}</td><td><b>${full}</b></td>
-        <td>${partial?`<span class="pill pill-amber">${partial}</span>`:'—'}</td>
-        <td>${nf?`<span class="pill pill-amber">${nf} ⚠</span>`:'—'}</td></tr>`;
-    }
-    document.getElementById('tblMonth').innerHTML = mrows;
-
     /* ----- leave: pending queue ----- */
     const pend = leave.filter(l=>l.type==='pto'&&l.status==='pending').sort((a,b)=>b.at-a.at);
     const lb=document.getElementById('leaveBadge');
@@ -1225,6 +1236,21 @@ const ADMIN = {
     document.getElementById('npLeave').innerHTML = pend.length ? pendHtml : '';
     document.getElementById('npLeaveWrap').style.display = pend.length ? '' : 'none';
     document.getElementById('npLeaveN').textContent = pend.length;
+
+    /* ----- leave: decision log — who approved what, when ----- */
+    const decided = leave.filter(l=>l.type==='pto' && l.status!=='pending' && l.decidedAt)
+                         .sort((a,b)=>b.decidedAt-a.decidedAt).slice(0,25);
+    let drows='<tr><th>Tên · Nom</th><th>Ngày nghỉ · Congé</th><th>Kết quả · Décision</th><th>Người duyệt · Par</th><th>Lúc · Le</th></tr>';
+    if(!decided.length) drows+='<tr><td colspan="5" class="muted center">Chưa có quyết định nào · Aucune décision</td></tr>';
+    for(const r of decided){
+      const de=employees.find(x=>x.id===r.empId);
+      drows += `<tr><td><b>${de?esc(de.name):r.empId}</b></td>
+        <td>${fmtD(r.startDate)} → ${fmtD(r.endDate)} (${r.days})${halfLabel(r)}</td>
+        <td>${r.status==='approved'?'<span class="pill pill-green">Duyệt · Approuvé</span>':'<span class="pill pill-rose">Từ chối · Refusé</span>'}${r.decisionNote?`<br><span class="muted" style="font-size:12px">«${esc(r.decisionNote)}»</span>`:''}</td>
+        <td>${esc(r.by||'—')}</td>
+        <td class="muted" style="font-size:12.5px">${fmtD(parisDay(r.decidedAt))} ${parisTime(r.decidedAt)}</td></tr>`;
+    }
+    document.getElementById('tblDecided').innerHTML = drows;
 
     /* ----- leave: weekly roster ----- */
     const DW=['T2','T3','T4','T5','T6','T7','CN'];
@@ -1835,7 +1861,7 @@ const TAB_GROUPS = {
   staff: ['staff'],
   log:   ['log'],
   audit: ['audit'],
-  pay:   ['month','export'],
+  pay:   ['export'],
   kiosk: ['kiosk'],
 };
 document.querySelectorAll('.admin-side button').forEach(b=>{
@@ -1851,6 +1877,18 @@ document.querySelectorAll('.admin-side button').forEach(b=>{
     ADMIN.refresh();
   };
 });
+
+/* ---------- Today auto-refresh: keeps the salon view live without a reload.
+     Never fires while a manager is typing or drilled into a name — that would
+     wipe their edit mid-keystroke. ---------- */
+setInterval(()=>{
+  if(!ADMIN.user || document.hidden) return;
+  if(ADMIN.selectedEmp || ADMIN.editingEmp) return;
+  const tag = document.activeElement && document.activeElement.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;
+  const cur = document.querySelector('.admin-side button.active');
+  if(cur && cur.dataset.atab==='today') ADMIN.refresh();
+}, 60000);
 
 /* ---------- update check: no more cache clearing ---------- */
 document.getElementById('buildTag').textContent = BUILD;
