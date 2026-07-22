@@ -534,7 +534,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.18-1';   // bump on every deploy — powers the update banner
+const BUILD='v2026.07.22-01';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -556,9 +556,8 @@ const fmtD = k => k.slice(8,10)+'/'+k.slice(5,7);
 const halfLabel = l => l.half==='am' ? ' (½ sáng · matin)' : l.half==='pm' ? ' (½ chiều · après-midi)' : '';
 const addDays = (k,n)=>{ const d=new Date(k+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
 const weekMonday = k=>{ const d=new Date(k+'T00:00:00Z'); return addDays(k, -((d.getUTCDay()+6)%7)); };
-/* fallbacks only — the admin overwrites both from the config table in loadAll() */
-let FULL_DAY_MIN = 570;
-let PTO_RATE = 2.5;
+const FULL_DAY_MIN = 570;
+const PTO_RATE = 2.5;
 function parisToTs(dayKey, hhmm){
   let guess = Date.parse(dayKey+'T'+hhmm+':00Z');
   for(let i=0;i<3;i++){
@@ -919,29 +918,41 @@ function buildSessions(){
   for(const [empId, list] of Object.entries(byEmp)){
     list.sort((a,b)=>a.ts-b.ts);   // pairing REQUIRES chronological order — never trust fetch order or edited times
     let open=null;
+    /* A DAY IS SEALED AT MIDNIGHT (config auto_close, credit 0 min).
+       An unclosed check-in is resolved on its OWN day — manager add-out fix if one
+       exists, otherwise a missing-out flag worth 0h — and can NEVER pair with a later
+       day's check-out. Before this, one forgotten check-out swallowed the following
+       days: 18/07 in + 21/07 out = 81h56 charged to 18/07, with 20/07 and 21/07
+       showing "Vắng". Fixed v2026.07.22-01. */
+    const closeOpen = (o)=>{
+      if(parisDay(o.ts)===today){
+        sessions.push({empId, shop:o.shop, start:o.ts, end:null, inId:o.id});
+      } else if(addOuts[o.id]){
+        sessions.push({empId, shop:o.shop, start:o.ts, end:addOuts[o.id].newTs, inId:o.id, corrected:true});
+      } else {
+        flags.push({kind:'missing-out', empId, inEventId:o.id, ts:o.ts, shop:o.shop});
+      }
+    };
     for(const ev of list){
       if(ev.type==='in'){
-        if(!open) open=ev;               // duplicate check-ins silently ignored (flag disabled)
+        if(!open){ open=ev; }
+        else if(parisDay(open.ts)!==parisDay(ev.ts)){ closeOpen(open); open=ev; }
+        // same-day repeat check-in = double tap: keep the earlier one, ignore this
       } else if(ev.type==='out'){
-        if(open){
+        if(open && parisDay(open.ts)===parisDay(ev.ts)){
           sessions.push({empId, shop:open.shop, start:open.ts, end:ev.ts, inId:open.id, corrected:!!(open.corrected||ev.corrected)});
           open=null;
-        } else if(addIns[ev.id]){
-          sessions.push({empId, shop:ev.shop, start:addIns[ev.id].newTs, end:ev.ts, inId:ev.id, corrected:true});
         } else {
-          flags.push({kind:'missing-in', empId, eventId:ev.id, ts:ev.ts, shop:ev.shop});
+          if(open){ closeOpen(open); open=null; }   // stale check-in from an earlier day
+          if(addIns[ev.id]){
+            sessions.push({empId, shop:ev.shop, start:addIns[ev.id].newTs, end:ev.ts, inId:ev.id, corrected:true});
+          } else {
+            flags.push({kind:'missing-in', empId, eventId:ev.id, ts:ev.ts, shop:ev.shop});
+          }
         }
       }
     }
-    if(open){
-      if(parisDay(open.ts)===today){
-        sessions.push({empId, shop:open.shop, start:open.ts, end:null, inId:open.id});
-      } else if(addOuts[open.id]){
-        sessions.push({empId, shop:open.shop, start:open.ts, end:addOuts[open.id].newTs, inId:open.id, corrected:true});
-      } else {
-        flags.push({kind:'missing-out', empId, inEventId:open.id, ts:open.ts, shop:open.shop});
-      }
-    }
+    if(open) closeOpen(open);
   }
   return {sessions, flags, acks};
 }
@@ -1028,7 +1039,7 @@ function buildDeviceFlags(acks){
 async function loadAll(){
   const since = new Date(Date.now() - 62*864e5).toISOString();
   const corSince = new Date(Date.now() - 95*864e5).toISOString();
-  const [emps, pns, cors, lvs, mgrs, hol, shp, cfgQ] = await Promise.all([
+  const [emps, pns, cors, lvs, mgrs, hol, shp] = await Promise.all([
     sb.from('employees').select('*').order('id'),
     sb.from('punches').select('*').gte('ts', since).order('ts', {ascending:true}).limit(20000),
     sb.from('corrections').select('*').gte('created_at', corSince).limit(20000),
@@ -1036,11 +1047,7 @@ async function loadAll(){
     sb.from('managers').select('user_id, name, role, shop_id'),
     sb.from('holidays').select('date, name'),
     sb.from('shops').select('id, name, kiosk_key').order('id'),
-    sb.from('config').select('key, value'),
   ]);
-  const cfg = {}; (cfgQ.data||[]).forEach(r=>cfg[r.key]=r.value);
-  if(+cfg.full_day_min > 0)        FULL_DAY_MIN = +cfg.full_day_min;
-  if(+cfg.pto_rate_per_month > 0)  PTO_RATE = +cfg.pto_rate_per_month;
   shops = shp.data || [];
   mgrNames = {}; (mgrs.data||[]).forEach(m=>mgrNames[m.user_id]=m.name);
   managersList = mgrs.data || [];
@@ -1111,10 +1118,6 @@ const ADMIN = {
 
   async refresh(){
     await loadAll();
-    this.render();
-  },
-  /* render everything from the already-loaded data — no network */
-  render(){
     if(employees.length===0 && events.length===0){
       // an authenticated non-manager sees empty tables — say so honestly
       document.getElementById('tblToday').innerHTML =
@@ -1151,7 +1154,7 @@ const ADMIN = {
       else if(isOff)    st = `<span class="pill" style="background:var(--muted);color:var(--ink-soft)">Nghỉ tuần · Repos</span>`;
       else              st = `<span class="pill pill-rose">${isToday?'○ Vắng · Absent':'Nghỉ · Absent'}</span>`;
       const firstDay = sessions.filter(s=>s.empId===e.id && parisDay(s.start)===vd).sort((a,b)=>a.start-b.start)[0];
-      rows += `<tr class="clickable" onclick="ADMIN.selectEmp('${e.id}')"><td><b>${esc(e.name)}</b>${hasFlag?' <span class="pill pill-amber">⚠</span>':''}</td>
+      rows += `<tr class="clickable" onclick="ADMIN.selectEmp('${e.id}')"><td><b>${e.name}</b>${hasFlag?' <span class="pill pill-amber">⚠</span>':''}</td>
         <td>${st}</td><td><b>${fmtMin(mins)}</b>${mins>=FULL_DAY_MIN?' <span class="pill pill-green">9g30</span>':''}</td>
         <td>${firstDay?parisTime(firstDay.start):'—'}</td></tr>`;
       if(this.selectedEmp===e.id){
@@ -1179,7 +1182,7 @@ const ADMIN = {
       os.style.display='flex';
       os.innerHTML='<span class="ost-lbl">Hôm nay nghỉ:</span>' + offList.map(e=>{
         const pto=ptoOn(e.id,today);
-        return `<span class="pill ${pto?'pill-green':''}" ${pto?'':'style="background:rgba(var(--accent-rgb),.10);color:var(--accent)"'}>${esc(e.name)} · ${pto?'Phép':'Nghỉ tuần'}</span>`;
+        return `<span class="pill ${pto?'pill-green':''}" ${pto?'':'style="background:rgba(var(--accent-rgb),.10);color:var(--accent)"'}>${e.name} · ${pto?'Phép':'Nghỉ tuần'}</span>`;
       }).join('');
     } else { os.style.display='none'; os.innerHTML=''; }
 
@@ -1196,7 +1199,7 @@ const ADMIN = {
       const full=Object.values(dayMap).filter(m=>m>=FULL_DAY_MIN).length;
       const partial=Object.values(dayMap).filter(m=>m>0&&m<FULL_DAY_MIN).length;
       const nf=flags.filter(f=>f.empId===e.id).length;
-      mrows += `<tr><td><b>${esc(e.name)}</b></td><td><b>${fmtMin(total)}</b></td><td>${days}</td><td><b>${full}</b></td>
+      mrows += `<tr><td><b>${e.name}</b></td><td><b>${fmtMin(total)}</b></td><td>${days}</td><td><b>${full}</b></td>
         <td>${partial?`<span class="pill pill-amber">${partial}</span>`:'—'}</td>
         <td>${nf?`<span class="pill pill-amber">${nf} ⚠</span>`:'—'}</td></tr>`;
     }
@@ -1210,7 +1213,7 @@ const ADMIN = {
       const e = employees.find(x=>x.id===r.empId);
       const bal = e?ptoBalance(e):0, after = bal - r.days;
       return `<div class="flag-item" style="background:var(--card);border-color:var(--line)">
-        <b>${e?esc(e.name):r.empId}</b> — xin nghỉ <b>${fmtD(r.startDate)} → ${fmtD(r.endDate)}</b> (${r.days} ngày)${halfLabel(r)}
+        <b>${e?e.name:r.empId}</b> — xin nghỉ <b>${fmtD(r.startDate)} → ${fmtD(r.endDate)}</b> (${r.days} ngày)${halfLabel(r)}
         ${r.note?`<br><span class="muted">«${esc(r.note)}»</span>`:''}
         <br><span class="muted" style="font-size:12.5px">Số dư: ${bal.toFixed(1)} → sau khi duyệt: <b style="color:${after<0?'var(--rose)':'var(--green)'}">${after.toFixed(1)}</b></span>
         <div class="flag-resolve">
@@ -1238,7 +1241,7 @@ const ADMIN = {
     }).join('')+'</tr>';
     for(const e of active){
       const offCnt = DW.filter((w,i)=>{ const d=addDays(mon,i); return dayoffOn(e.id,d)||ptoOn(e.id,d); }).length;
-      rrows += `<tr><td><b>${esc(e.name)}</b>${(offCnt===0 && (this.weekOffset||0)>=0)?' <span class="pill pill-amber" style="font-size:10.5px;padding:1px 7px">chưa nghỉ</span>':''}</td>`+DW.map((w,i)=>{
+      rrows += `<tr><td><b>${e.name}</b>${(offCnt===0 && (this.weekOffset||0)>=0)?' <span class="pill pill-amber" style="font-size:10.5px;padding:1px 7px">chưa nghỉ</span>':''}</td>`+DW.map((w,i)=>{
         const d=addDays(mon,i);
         const pr = leave.find(l=>l.type==='pto'&&l.empId===e.id&&l.status==='approved'&&l.startDate<=d&&l.endDate>=d);
         if(pr) return `<td class="center"><span class="cell-chip chip-pto">${pr.half?'½ Phép':'Phép'}</span></td>`;
@@ -1302,7 +1305,7 @@ const ADMIN = {
     this._pay={pm, rows:payRows, flags:monthFlags};
     let prow='<tr><th>Tên · Nom</th><th>Ngày làm · Jours</th><th>Tổng giờ · Heures</th><th>Công quy đổi · Équiv.</th><th>Đủ công · Compl.</th><th>Thiếu giờ · Incompl.</th><th>Phép · Congés</th><th>Nghỉ tuần · Repos</th><th>CN / Lễ · Dim/Fér</th><th>Vắng · Abs.</th><th>⚠</th></tr>';
     payRows.forEach(r=>{
-      prow += `<tr><td><b>${esc(r.name)}</b></td><td>${r.daysW}</td><td><b>${fmtMin(r.totalM)}</b></td><td><b>${r.eq.toFixed(2)}</b></td>
+      prow += `<tr><td><b>${r.name}</b></td><td>${r.daysW}</td><td><b>${fmtMin(r.totalM)}</b></td><td><b>${r.eq.toFixed(2)}</b></td>
         <td>${r.full}</td><td>${r.partial||'—'}</td><td>${r.ptoD||'—'}</td><td>${r.offD||'—'}</td>
         <td>${(r.sunM||r.holM)?`${(r.sunM/60).toFixed(1)}g / ${(r.holM/60).toFixed(1)}g`:'—'}</td>
         <td>${r.missed?`<span class="pill pill-rose">${r.missed}</span>`:'—'}</td>
@@ -1318,7 +1321,7 @@ const ADMIN = {
       ? '<div class="card"><h2 class="card-h">Cảnh báo trong tháng <span class="fr">Alertes du mois</span></h2>'+
         monthFlags.map(f=>{
           const e2=employees.find(x=>x.id===f.empId);
-          return `<div class="leave-line"><b>${e2?esc(e2.name):''}</b><span class="pill pill-amber">${kindLabel(f)}</span><span class="muted">${f.date||parisDay(f.ts)}</span></div>`;
+          return `<div class="leave-line"><b>${e2?e2.name:''}</b><span class="pill pill-amber">${kindLabel(f)}</span><span class="muted">${f.date||parisDay(f.ts)}</span></div>`;
         }).join('')+'</div>' : '';
 
     /* ----- journal ----- */
@@ -1337,7 +1340,7 @@ const ADMIN = {
       const e=employees.find(x=>x.id===ev.empId);
       lrows += `<tr><td>${parisDay(ev.ts)}</td><td><b>${parisTime(ev.ts)}</b></td>
         <td><span class="punch-type-${ev.type}">${ev.type==='in'?'VÀO':'RA'}</span></td>
-        <td><b>${e?esc(e.name):ev.empId}</b></td><td>Tiệm ${ev.shop} · Salon ${ev.shop}</td>
+        <td><b>${e?e.name:ev.empId}</b></td><td>Tiệm ${ev.shop} · Salon ${ev.shop}</td>
         <td>${ev.corrected?'<span class="corrected-badge">đã sửa · corrigé</span>':''}</td></tr>`;
     });
     document.getElementById('tblLog').innerHTML = lrows;
@@ -1359,7 +1362,7 @@ const ADMIN = {
     } else {
       fl.innerHTML = flags.map(f=>{
         const e=employees.find(x=>x.id===f.empId);
-        const nm=e?esc(e.name):f.empId;
+        const nm=e?e.name:f.empId;
         if(f.kind==='missing-out'){
           return `<div class="flag-item"><b>${nm}</b> — Quên chấm công RA <span class="fr-inline">Sortie manquante</span><br>
             <span class="muted">Vào ${parisDay(f.ts)} lúc ${parisTime(f.ts)} · Tiệm ${f.shop}</span><br>
@@ -1393,7 +1396,7 @@ const ADMIN = {
         fl.innerHTML += '<p class="muted" style="font-size:13px;font-weight:700;margin:14px 0 8px">📱 Cảnh báo thiết bị — chỉ để kiểm tra, KHÔNG ảnh hưởng lương <span class="fr-inline">Alertes appareil — informatif</span></p>'
           + devFlags.map(f=>{
             if(f.kind==='dev-multi'){
-              const names=f.empIds.map(id=>{ const e2=employees.find(x=>x.id===id); return e2?esc(e2.name):id; }).join(', ');
+              const names=f.empIds.map(id=>{ const e2=employees.find(x=>x.id===id); return e2?e2.name:id; }).join(', ');
               return `<div class="flag-item flag-dev"><b>Một điện thoại chấm cho ${f.empIds.length} người</b> — ngày ${fmtD(f.date)}<br>
                 <span class="muted">${names} · thiết bị ${f.device.slice(0,8)}…</span><br>
                 <span class="muted" style="font-size:12.5px">Có thể là chấm hộ — hỏi trực tiếp trước khi kết luận.</span>
@@ -1402,7 +1405,7 @@ const ADMIN = {
                 </div></div>`;
             }
             const e2=employees.find(x=>x.id===f.empId);
-            return `<div class="flag-item flag-dev"><b>${e2?esc(e2.name):f.empId}</b> — chấm bằng điện thoại mới lần đầu<br>
+            return `<div class="flag-item flag-dev"><b>${e2?e2.name:f.empId}</b> — chấm bằng điện thoại mới lần đầu<br>
               <span class="muted">${parisDay(f.ts)} lúc ${parisTime(f.ts)} · thiết bị ${f.device.slice(0,8)}…</span><br>
               <span class="muted" style="font-size:12.5px">Đổi điện thoại là bình thường — xác nhận nếu đúng là máy của họ.</span>
               <div class="flag-resolve">
@@ -1425,7 +1428,7 @@ const ADMIN = {
       al.innerHTML=auditListArr.map(c=>{
         const ev=events.find(x=>x.id===c.eventId);
         const e=employees.find(x=>x.id===c.empId);
-        const nm=e?esc(e.name):'?';
+        const nm=e?e.name:'?';
         let what='';
         if(c.kind==='add-out') what=`Thêm giờ RA <b>${parisTime(c.newTs)}</b> (${parisDay(c.newTs)}) — thiếu chấm ra`;
         if(c.kind==='add-in')  what=`Thêm giờ VÀO <b>${parisTime(c.newTs)}</b> (${parisDay(c.newTs)}) — thiếu chấm vào`;
@@ -1450,7 +1453,7 @@ const ADMIN = {
   dayDetailHtml(e, vd){
     const {evs}=effectiveEvents();
     const mine=evs.filter(x=>x.empId===e.id && parisDay(x.ts)===vd).sort((a,b)=>a.ts-b.ts);
-    let h = `<b style="font-size:13.5px">Lượt chấm ${fmtD(vd)} — ${esc(e.name)}</b>`;
+    let h = `<b style="font-size:13.5px">Lượt chấm ${fmtD(vd)} — ${e.name}</b>`;
     if(mine.length===0) h += '<p class="muted" style="font-size:13px;margin-top:6px">Không có lượt chấm ngày này.</p>';
     mine.forEach(ev=>{
       h += `<div class="punch-row">
@@ -1462,7 +1465,7 @@ const ADMIN = {
         <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose)" onclick="event.stopPropagation();ADMIN.voidEvent('${ev.id}','${ev.empId}',${ev.ts})">Hủy lượt</button>
       </div>`;
     });
-    h += `<button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="event.stopPropagation();ADMIN.goLog('${esc(e.name.replace(/'/g,"\\'"))}')">Xem cả tháng trong Lịch sử chấm công →</button>`;
+    h += `<button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="event.stopPropagation();ADMIN.goLog('${e.name.replace(/'/g,"\\'")}')">Xem cả tháng trong Lịch sử chấm công →</button>`;
     return `<div onclick="event.stopPropagation()">${h}</div>`;
   },
   goLog(name){
@@ -1480,11 +1483,11 @@ const ADMIN = {
     this.refresh();
   },
 
-  setLogQuery(v){ this.logQuery=v; this.render(); },
+  setLogQuery(v){ this.logQuery=v; this.refresh(); },
   toggleLogSort(){
     this.logSort = this.logSort==='asc' ? 'desc' : 'asc';
     document.getElementById('logSortBtn').textContent = this.logSort==='asc' ? 'Cũ nhất trước' : 'Mới nhất trước';
-    this.render();
+    this.refresh();
   },
   exportLog(){
     const list=this._logList||[];
@@ -1500,11 +1503,11 @@ const ADMIN = {
     a.download='lich-su-cham-cong-'+parisMonth(Date.now())+'.csv';
     document.body.appendChild(a); a.click(); a.remove();
   },
-  setAuditQuery(v){ this.auditQuery=v; this.render(); },
+  setAuditQuery(v){ this.auditQuery=v; this.refresh(); },
   toggleAuditSort(){
     this.auditSort = this.auditSort==='asc' ? 'desc' : 'asc';
     document.getElementById('auditSortBtn').textContent = this.auditSort==='asc' ? 'Cũ nhất trước' : 'Mới nhất trước';
-    this.render();
+    this.refresh();
   },
   async copyLastWeek(){
     const today=parisDay(Date.now());
@@ -1540,12 +1543,12 @@ const ADMIN = {
     let nd = addDays(this.viewDay || today, n);
     if(nd >= today) nd = null;             // clamp at today
     this.viewDay = nd;
-    this.render();
+    this.refresh();
   },
   setDay(v){
     const today = parisDay(Date.now());
     this.viewDay = (v && v < today) ? v : null;
-    this.render();
+    this.refresh();
   },
 
   /* --- staff: search, sort, bulk add, kiosk links --- */
@@ -1561,14 +1564,14 @@ const ADMIN = {
     list.forEach(e=>{
       const bal=ptoBalance(e);
       if(this.editingEmp===e.id){
-        srows += `<tr style="background:var(--muted)"><td><input class="num-input" style="width:100%;min-width:130px;text-align:left" id="en-${e.id}" value="${esc(e.name)}"></td>
+        srows += `<tr style="background:var(--muted)"><td><input class="num-input" style="width:100%;min-width:130px;text-align:left" id="en-${e.id}" value="${e.name.replace(/"/g,'&quot;')}"></td>
           <td><input class="num-input" id="ec-${e.id}" maxlength="6" inputmode="numeric" value="${e.pin}"></td>
           <td colspan="2"><span class="errline" id="ee-${e.id}" style="text-align:left;min-height:0"></span></td>
           <td><button class="btn btn-ink btn-sm" onclick="ADMIN.saveEmpEdit('${e.id}')">Lưu</button></td>
           <td><button class="btn btn-ghost btn-sm" onclick="ADMIN.cancelEmpEdit()">Hủy</button></td></tr>`;
         return;
       }
-      srows += `<tr><td><b>${esc(e.name)}</b></td><td><b>${e.pin}</b></td>
+      srows += `<tr><td><b>${e.name}</b></td><td><b>${e.pin}</b></td>
         <td><b style="color:${bal<0?'var(--rose)':'var(--green)'}">${bal.toFixed(1)}</b></td>
         <td><input class="num-input" id="bal-${e.id}" type="number" step="0.5" value="${e.ptoOpening||0}">
             <button class="btn btn-ink btn-sm" onclick="ADMIN.saveOpening('${e.id}')">Lưu</button></td>
@@ -1598,9 +1601,9 @@ const ADMIN = {
     const box=document.getElementById('mgrList'); if(!box) return;
     box.innerHTML = managersList.length ? managersList.map(m=>{
       const shop = m.shop_id ? shops.find(x=>x.id===m.shop_id) : null;
-      return `<div class="leave-line"><b>${esc(m.name)}</b>
+      return `<div class="leave-line"><b>${m.name}</b>
         <span class="pill" style="background:var(--muted);color:var(--ink-soft)">${m.role==='owner'?'Chủ · Propriétaire':'Quản lý · Manager'}</span>
-        <span class="muted" style="font-size:13px">${shop?esc(shop.name):'Tất cả tiệm · Tous salons'}</span></div>`;
+        <span class="muted" style="font-size:13px">${shop?shop.name:'Tất cả tiệm · Tous salons'}</span></div>`;
     }).join('') : '<span class="muted">—</span>';
   },
   toggleStaffSort(){
@@ -1637,10 +1640,10 @@ const ADMIN = {
     if(!box) return;
     box.innerHTML = shops.length ? shops.map(s=>{
       const url = location.origin + location.pathname + `?kiosk=1&shop=${s.id}&key=${s.kiosk_key}`;
-      return `<div class="leave-line"><b>${esc(s.name)}</b>
+      return `<div class="leave-line"><b>${s.name}</b>
         <button class="btn btn-ink btn-sm" onclick="ADMIN.copyText('${url}')">Chép link · Copier</button>
         <a class="btn btn-sm" style="background:rgba(var(--accent-rgb),.10);color:var(--accent);text-decoration:none" href="${url}" target="_blank">Mở · Ouvrir</a>
-        <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose);margin-left:auto" onclick="ADMIN.rotateKiosk(${s.id}, '${esc(s.name.replace(/'/g,"\\'"))}')">Cấp khóa mới</button></div>`;
+        <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose);margin-left:auto" onclick="ADMIN.rotateKiosk(${s.id}, '${s.name.replace(/'/g,"\\'")}')">Cấp khóa mới</button></div>`;
     }).join('') : '<span class="muted">—</span>';
   },
   async rotateKiosk(shopId, shopName){
@@ -1677,7 +1680,7 @@ const ADMIN = {
   },
 
   /* --- per-employee punch editor (inline day dropdown) --- */
-  selectEmp(id){ this.selectedEmp=(this.selectedEmp===id?null:id); this.render(); },
+  selectEmp(id){ this.selectedEmp=(this.selectedEmp===id?null:id); this.refresh(); },
 
   /* --- corrections (attributed to the signed-in manager by RLS) --- */
   async saveCorrection(rec){
@@ -1734,8 +1737,8 @@ const ADMIN = {
   },
 
   /* --- leave management --- */
-  shiftWeek(n){ this.weekOffset=(this.weekOffset||0)+n; this.render(); },
-  resetWeek(){ this.weekOffset=0; this.render(); },
+  shiftWeek(n){ this.weekOffset=(this.weekOffset||0)+n; this.refresh(); },
+  resetWeek(){ this.weekOffset=0; this.refresh(); },
   async toggleDayOff(empId, date){
     if(ptoOn(empId,date)) return;
     const rec = leave.find(l=>l.type==='dayoff'&&l.empId===empId&&l.date===date);
@@ -1790,7 +1793,7 @@ const ADMIN = {
   },
 
   /* --- export --- */
-  setPayMonth(v){ this.payMonth=v; this.render(); },
+  setPayMonth(v){ this.payMonth=v; this.refresh(); },
   _csvRows(sep){
     const p=this._pay; if(!p) return '';
     const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
