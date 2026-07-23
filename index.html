@@ -466,7 +466,6 @@
       <div id="atab-notif" style="display:none">
         <div class="card">
           <h2 class="card-h">Thông báo <span class="fr">Notifications</span></h2>
-          <p class="muted" style="font-size:13px;margin:4px 0 12px">Mọi cảnh báo chưa xử lý, 30 ngày gần nhất.</p>
           <div class="nt-bar" id="ntChips"></div>
           <div id="ntList"></div>
         </div>
@@ -482,7 +481,6 @@
         </div>
         <div class="card">
           <h2 class="card-h">Quyết định gần đây <span class="fr">Décisions récentes</span></h2>
-          <p class="muted" style="font-size:13px;margin:4px 0 10px">Ai đã duyệt / từ chối đơn nghỉ phép. <span class="fr-inline">Qui a décidé, et quand.</span></p>
           <div class="table-wrap"><table id="tblDecided"></table></div>
         </div>
 
@@ -506,7 +504,6 @@
       <div id="atab-sheet" style="display:none">
         <div class="card">
           <h2 class="card-h">Bảng công cá nhân <span class="fr">Feuille de temps individuelle</span></h2>
-          <p class="muted" style="font-size:13px;margin:4px 0 10px">Từng ngày: giờ vào – giờ ra, tổng giờ, tiệm. <span class="fr-inline">Jour par jour.</span></p>
           <div class="roster-head">
             <select id="sheetEmp" class="num-input" style="width:auto;text-align:left;flex:1;min-width:180px" onchange="ADMIN.setSheetEmp(this.value)"></select>
             <button id="sheetPrev" onclick="ADMIN.shiftSheetMonth(-1)">‹</button>
@@ -516,7 +513,6 @@
           <div class="stat-row" id="sheetSummary"></div>
           <div id="sheetCal"></div>
           <div id="sheetLegend" style="margin-top:12px"></div>
-          <p class="muted" style="font-size:12.5px;margin-top:8px">Chỉ có dữ liệu 62 ngày gần nhất. <span class="fr-inline">62 derniers jours seulement.</span></p>
         </div>
       </div>
 
@@ -602,7 +598,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.23-04';   // bump on every deploy — powers the update banner
+const BUILD='v2026.07.23-07';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -668,9 +664,7 @@ function showBrowserHint(){
   const title = app
     ? `Dùng trình duyệt để có trải nghiệm tốt nhất`
     : `Cài app để mở nhanh hơn`;
-  const why = app
-    ? `App chạy mượt hơn trên trình duyệt. Làm 1 lần, các lần sau mở là dùng ngay:`
-    : `Thêm vào màn hình chính, lần sau chỉ cần 1 chạm:`;
+  const why = '';
 
   let html = `<div class="ib-warn">
     <button class="ib-x" onclick="dismissHint()" aria-label="Đóng">×</button>
@@ -1108,6 +1102,15 @@ function minutesForDay(empId, dayKey, sessions){
 }
 const dayoffOn = (empId,d)=>leave.some(l=>l.type==='dayoff'&&l.empId===empId&&l.date===d);
 const ptoOn = (empId,d)=>leave.some(l=>l.type==='pto'&&l.empId===empId&&l.status==='approved'&&l.startDate<=d&&l.endDate>=d);
+const ptoRows = (empId,d)=>leave.filter(l=>l.type==='pto'&&l.empId===empId&&l.status==='approved'&&l.startDate<=d&&l.endDate>=d);
+/* 1 = whole day off, 0.5 = half day. Two approved halves on one date add up to 1. */
+const ptoFrac = (empId,d)=>Math.min(1, ptoRows(empId,d).reduce((a,l)=>a+(l.half?0.5:1),0));
+const ptoMark = (empId,d)=>{
+  const f = ptoFrac(empId,d);
+  if(f <= 0 || f >= 1) return '';          // no PTO, or a whole day — nothing to mark
+  const h = ptoRows(empId,d).find(l=>l.half);
+  return h ? (h.half==='am' ? ' ½ sáng' : ' ½ chiều') : ' ½';
+};
 /* Minutes needed for a COMPLETE day: 9h30 normally, 4h45 against an approved
    half-day PTO, 0 on a full PTO day or a weekly day off (nothing is owed). */
 function requiredMin(empId, d){
@@ -1294,25 +1297,22 @@ function alertCard(f){
 
   if(f.kind === 'no-show'){
     return open + `<b>${empName(f.empId)}</b> — vắng không phép · ${fmtD(f.date)}<br>
-      <span class="muted" style="font-size:12.5px">Không chấm công, không nghỉ tuần, không nghỉ phép.</span>
       <div class="flag-resolve">
         <button class="btn btn-ink btn-sm" onclick="ADMIN.ackNoShow('${f.empId}','${f.date}')">Ghi nhận vắng</button>
-        <span class="muted" style="font-size:12.5px">hoặc gán ngày nghỉ trong «Nghỉ phép»</span>
       </div></div>`;
   }
 
   if(f.kind === 'dev-multi'){
     const names = f.empIds.map(empName).join(', ');
     return open + `<b>1 điện thoại · ${f.empIds.length} người</b> · ${fmtD(f.date)}<br>
-      <span class="muted" style="font-size:12.5px">${names} — hỏi trực tiếp trước khi kết luận.</span>
+      <span class="muted" style="font-size:12.5px">${names}</span>
       <div class="flag-resolve">
         <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empIds[0]}')">Đã kiểm tra</button>
       </div></div>`;
   }
 
   if(f.kind === 'dev-cross'){
-    return open + `<b>${empName(f.empId)}</b> dùng máy của <b>${empName(f.ownerId)}</b> · ${fmtD(f.date)}<br>
-      <span class="muted" style="font-size:12.5px">Mượn máy là bình thường — hỏi cho chắc. Hiện lại mỗi ngày nếu tiếp tục.</span>
+    return open + `<b>${empName(f.empId)}</b> dùng máy của <b>${empName(f.ownerId)}</b> · ${fmtD(f.date)}
       <div class="flag-resolve">
         <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Đã kiểm tra</button>
       </div></div>`;
@@ -1320,7 +1320,7 @@ function alertCard(f){
 
   if(f.kind === 'dev-churn'){
     return open + `<b>${empName(f.empId)}</b> — đang dùng Zalo để vào web<br>
-      <span class="muted" style="font-size:12.5px">Nhờ nhân viên mở trình duyệt độc lập (Safari/Chrome) và cài app vào màn hình chính. (${f.n}/${f.of} lượt)</span>
+      <span class="muted" style="font-size:12.5px">Nhờ nhân viên mở trình duyệt độc lập · ${f.n}/${f.of} lượt</span>
       <div class="flag-resolve">
         <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Đã nhắc</button>
       </div></div>`;
@@ -1328,7 +1328,7 @@ function alertCard(f){
 
   /* dev-new */
   return open + `<b>${empName(f.empId)}</b> — điện thoại mới<br>
-    <span class="muted" style="font-size:12.5px">${fmtD(parisDay(f.ts))} lúc ${parisTime(f.ts)} — xác nhận nếu đúng máy của họ.</span>
+    <span class="muted" style="font-size:12.5px">${fmtD(parisDay(f.ts))} lúc ${parisTime(f.ts)}</span>
     <div class="flag-resolve">
       <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Máy mới hợp lệ</button>
     </div></div>`;
@@ -1468,9 +1468,14 @@ const ADMIN = {
       else if(mins>0)   st = done
                           ? `<span class="pill pill-green">Có làm · Travaillé</span>`
                           : `<span class="pill pill-amber">Thiếu giờ · Incomplet</span>`;
-      else if(isPto)    st = `<span class="pill" style="background:var(--green-soft);color:var(--green)">Nghỉ phép · Congé</span>`;
+      else if(isPto)    st = `<span class="pill" style="background:var(--green-soft);color:var(--green)">Nghỉ phép${ptoMark(e.id, vd)}</span>`;
       else if(isOff)    st = `<span class="pill" style="background:var(--muted);color:var(--ink-soft)">Nghỉ tuần · Repos</span>`;
       else              st = `<span class="pill pill-rose">${isToday?'○ Vắng · Absent':'Nghỉ · Absent'}</span>`;
+      /* worked AND part-day PTO: the pill answers "did they meet today's bar",
+         the chip explains why the bar was lower. */
+      const pf = ptoFrac(e.id, vd);
+      if(pf>0 && pf<1 && (live || mins>0))
+        st += ` <span class="pill" style="background:var(--green-soft);color:var(--green);font-size:10.5px;padding:1px 7px">Phép${ptoMark(e.id, vd)}</span>`;
       const firstDay = sessions.filter(s=>s.empId===e.id && parisDay(s.start)===vd).sort((a,b)=>a.start-b.start)[0];
       rows += `<tr class="clickable" onclick="ADMIN.selectEmp('${e.id}')"><td><b>${e.name}</b>${hasFlag?' <span class="pill pill-amber">⚠</span>':''}</td>
         <td>${st}</td><td><b>${fmtMin(mins)}</b>${done?` <span class="pill pill-green">${fmtMin(req)}</span>`:''}</td>
@@ -1500,7 +1505,7 @@ const ADMIN = {
       os.style.display='flex';
       os.innerHTML='<span class="ost-lbl">Hôm nay nghỉ:</span>' + offList.map(e=>{
         const pto=ptoOn(e.id,today);
-        return `<span class="pill ${pto?'pill-green':''}" ${pto?'':'style="background:rgba(var(--accent-rgb),.10);color:var(--accent)"'}>${e.name} · ${pto?'Phép':'Nghỉ tuần'}</span>`;
+        return `<span class="pill ${pto?'pill-green':''}" ${pto?'':'style="background:rgba(var(--accent-rgb),.10);color:var(--accent)"'}>${e.name} · ${pto?'Phép'+ptoMark(e.id,today):'Nghỉ tuần'}</span>`;
       }).join('');
     } else { os.style.display='none'; os.innerHTML=''; }
 
@@ -1543,7 +1548,7 @@ const ADMIN = {
       return `<th style="text-align:center${d===today?';color:var(--rose)':''}">${w}<br>${fmtD(d)}</th>`;
     }).join('')+'</tr>';
     for(const e of active){
-      const offCnt = DW.filter((w,i)=>{ const d=addDays(mon,i); return dayoffOn(e.id,d)||ptoOn(e.id,d); }).length;
+      const offCnt = DW.filter((w,i)=>{ const d=addDays(mon,i); return dayoffOn(e.id,d)||ptoFrac(e.id,d)>=1; }).length;
       rrows += `<tr><td><b>${e.name}</b>${(offCnt===0 && (this.weekOffset||0)>=0)?' <span class="pill pill-amber" style="font-size:10.5px;padding:1px 7px">chưa nghỉ</span>':''}</td>`+DW.map((w,i)=>{
         const d=addDays(mon,i);
         const pr = leave.find(l=>l.type==='pto'&&l.empId===e.id&&l.status==='approved'&&l.startDate<=d&&l.endDate>=d);
@@ -1555,10 +1560,10 @@ const ADMIN = {
     }
     rrows += `<tr><td class="muted" style="font-size:12.5px;font-weight:700">Đi làm · Effectif</td>`+DW.map((w,i)=>{
       const d=addDays(mon,i);
-      const off = active.filter(e=>dayoffOn(e.id,d)||ptoOn(e.id,d)).length;
+      const off = active.reduce((a,e)=> a + (dayoffOn(e.id,d) ? 1 : ptoFrac(e.id,d)), 0);
       const work = active.length - off;
       const cls = off > active.length/2 ? 'cov-bad' : off > active.length/3 ? 'cov-warn' : 'cov-ok';
-      return `<td class="center ${cls}" style="font-size:13px">${work}${cls==='cov-bad'?' — thiếu người!':cls==='cov-warn'?' ⚠':''}</td>`;
+      return `<td class="center ${cls}" style="font-size:13px">${work%1?work.toFixed(1):work}${cls==='cov-bad'?' — thiếu người!':cls==='cov-warn'?' ⚠':''}</td>`;
     }).join('')+'</tr>';
     document.getElementById('tblRoster').innerHTML = rrows;
 
@@ -1878,6 +1883,7 @@ const ADMIN = {
       else if(dayoffOn(emp.id,d)) st='off';
       else st=rostered?'abs':'none';
       days.push({d:d,i:i,ds:ds,mins:mins,st:st, sun:new Date(d+'T12:00:00Z').getUTCDay()===0, hol:holSet.has(d),
+                 ptoF:ptoFrac(emp.id,d), ptoM:ptoMark(emp.id,d),
                  corrected:ds.some(x=>x.corrected), shopsUsed:[...new Set(ds.map(x=>x.shop))]});
     }
 
@@ -1889,13 +1895,14 @@ const ADMIN = {
     for(const x of days){
       const last=x.ds[x.ds.length-1];
       const range=x.ds.length?parisTime(x.ds[0].start)+' – '+(last.end?parisTime(last.end):'…'):'';
-      const marks=[ x.ds.length>1?x.ds.length+' lượt':'', x.corrected?'✏️':'',
+      const marks=[ (x.ptoF>0&&x.ptoF<1&&x.mins>0)?'Phép'+x.ptoM:'',
+                    x.ds.length>1?x.ds.length+' lượt':'', x.corrected?'✏️':'',
                     (shops.length>1&&x.shopsUsed.length)?x.shopsUsed.map(v=>'T'+v).join('/'):'' ].filter(Boolean).join(' · ');
       cal+=`<div class="cal-c st-${x.st}">
         <div><span class="d"${x.sun||x.hol?' style="color:var(--accent)"':''}>${x.i}</span>${x.hol?' <span class="cal-t">Lễ</span>':x.sun?' <span class="cal-t">CN</span>':''}</div>
         ${x.mins>0?`<div class="h">${fmtMin(x.mins)}</div>`:''}
         ${range?`<div class="cal-r">${range}</div>`:''}
-        ${LBL[x.st]?`<div class="cal-s">${GLY[x.st]} ${LBL[x.st]}</div>`:''}
+        ${LBL[x.st]?`<div class="cal-s">${GLY[x.st]} ${LBL[x.st]}${x.st==='pto'?x.ptoM:''}</div>`:''}
         ${marks?`<div class="cal-m">${marks}</div>`:''}
       </div>`;
     }
@@ -1908,7 +1915,7 @@ const ADMIN = {
       <div class="stat"><b>${cnt('done')}</b><span>Đủ công · Complets</span></div>
       <div class="stat"><b>${cnt('short')}</b><span>Thiếu giờ · Incomplets</span></div>
       <div class="stat"><b>${cnt('fix')}</b><span>Cần sửa · À corriger</span></div>
-      <div class="stat"><b>${cnt('pto')}</b><span>Nghỉ phép · Congés</span></div>
+      <div class="stat"><b>${(()=>{const n=days.reduce((a,x)=>a+(x.d<=today?x.ptoF:0),0); return n%1?n.toFixed(1):n;})()}</b><span>Nghỉ phép · Congés</span></div>
       <div class="stat"><b>${cnt('abs')}</b><span>Vắng · Absences</span></div>`;
     document.getElementById('sheetLegend').innerHTML=
       ['done','short','fix','pto','off','abs','live'].map(k=>`<span class="lg st-${k}">${GLY[k]} ${LBL[k]}</span>`).join('');
