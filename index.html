@@ -30,6 +30,7 @@
     --green:#237A56; --green-soft:#E1F0E9;
     --rose:#DC2626;  --rose-soft:#FEE2E2;   /* danger/out: true red */
     --amber:#A8701A; --amber-soft:#F7ECD9;
+    --maxw:1680px;          /* admin needs the width; the phone views cap themselves */
     --radius:16px;
     --sh-sm:0 1px 2px rgba(16,24,40,.05);
     --sh-md:0 4px 6px rgba(15,23,42,.07);
@@ -48,7 +49,7 @@
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .fr{display:block;font-size:.72em;font-weight:500;color:var(--ink-soft);letter-spacing:.01em}
   .fr-inline{font-size:.82em;font-weight:500;color:var(--ink-soft)}
-  header{padding:14px 16px 0;max-width:1280px;margin:0 auto}
+  header{padding:14px 22px 0;max-width:var(--maxw);margin:0 auto}
   .brand{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
   .brand h1{font-size:19px;font-weight:800;letter-spacing:-.02em}
   .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--grad);box-shadow:0 0 8px rgba(var(--accent-rgb),.5);display:inline-block}
@@ -57,7 +58,7 @@
   nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:99px;font:inherit;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all .15s ease-out}
   nav button:hover{border-color:rgba(var(--accent-rgb),.35)}
   nav button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-  main{max-width:1280px;margin:0 auto;padding:18px 16px 56px}
+  main{max-width:var(--maxw);margin:0 auto;padding:18px 22px 56px}
   .view{display:none}.view.active{display:block}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--sh-sm)}
   .btn{display:block;width:100%;border:none;border-radius:12px;cursor:pointer;font:inherit;font-weight:600;padding:16px;font-size:17px;text-align:center;transition:all .2s ease-out}
@@ -150,8 +151,19 @@
   td b{font-variant-numeric:tabular-nums}
   tr.clickable{cursor:pointer;transition:background .15s}tr.clickable:hover{background:var(--muted)}
   .table-wrap{overflow-x:auto;border-radius:14px;box-shadow:var(--sh-sm)}
-  .flag-item{background:var(--amber-soft);border:1px solid #EAD7B0;border-radius:12px;padding:14px;margin-bottom:10px;font-size:14px}
-  .flag-dev{background:#F1EDF7;border-color:#D9CFE8}
+  .flag-item{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px 13px 18px;margin-bottom:9px;font-size:14px;overflow:hidden;box-shadow:var(--sh-sm)}
+  .flag-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ink-soft)}
+  .flag-item.nt-punch::before{background:var(--rose)}
+  .flag-item.nt-leave::before{background:var(--green)}
+  .flag-item.nt-device::before{background:#8B5CF6}
+  .flag-when{float:right;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-left:12px;white-space:nowrap}
+  .flag-dev{}
+  .nt-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .nt-chip{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 14px;font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:all .15s ease-out}
+  .nt-chip:hover{border-color:var(--ink-soft);color:var(--ink)}
+  .nt-chip.on{background:rgba(var(--accent-rgb),.08);color:var(--accent);border-color:rgba(var(--accent-rgb),.28)}
+  .nt-chip .n{margin-left:6px;opacity:.65;font-variant-numeric:tabular-nums}
+  .nt-empty{text-align:center;padding:44px 20px;color:var(--ink-soft);font-size:14px}
   .flag-resolve{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
   .flag-resolve input[type=time],.flag-resolve input[type=text],.punch-edit input[type=time]{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:16px;background:var(--card);color:var(--ink)}
   .flag-resolve input[type=text]{flex:1;min-width:140px}
@@ -165,6 +177,38 @@
   .add-form textarea{resize:vertical;min-width:0;width:100%;box-sizing:border-box}
   .add-form input,.add-form select,.add-form textarea{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit;background:var(--card);color:var(--ink);transition:border-color .15s,box-shadow .15s}
   .add-form input:focus,.add-form select:focus,.add-form textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.15)}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cal-h{text-align:center;font-size:12px;font-weight:700;color:var(--ink-soft);padding:2px 0}
+  .cal-c{border:1px solid var(--line);border-radius:10px;padding:6px 7px;min-height:78px;font-size:11.5px;line-height:1.4;background:var(--card)}
+  .cal-c .d{font-weight:800;font-size:13.5px}
+  .cal-c .h{font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
+  .cal-r{color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  .cal-s{font-weight:700;margin-top:2px}
+  .cal-m{color:var(--ink-soft);font-size:10.5px;margin-top:1px}
+  .cal-t{font-size:10px;font-weight:700;color:var(--accent)}
+  .cal-empty{border:none;background:none;min-height:0}
+  .st-done{background:var(--green-soft);border-color:rgba(35,122,86,.3)}
+  .st-done .cal-s{color:var(--green)}
+  .st-short{background:var(--amber-soft);border-color:rgba(168,112,26,.35)}
+  .st-short .cal-s{color:var(--amber)}
+  .st-fix{background:#FFEDD5;border-color:#F97316}
+  .st-fix .cal-s{color:#C2410C}
+  .st-pto{background:#EDE9FE;border-color:#C4B5FD}
+  .st-pto .cal-s{color:#6D28D9}
+  .st-off{background:var(--muted)}
+  .st-off .cal-s{color:var(--ink-soft)}
+  .st-abs{background:var(--rose-soft);border-color:rgba(220,38,38,.35)}
+  .st-abs .cal-s{color:var(--rose)}
+  .st-live{background:rgba(var(--accent-rgb),.10);border-color:rgba(var(--accent-rgb),.4)}
+  .st-live .cal-s{color:var(--accent)}
+  .st-none,.st-future{opacity:.5}
+  .ib-warn{background:var(--muted);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13.5px;line-height:1.55}
+  .ib-warn b{display:block;font-size:14.5px;margin-bottom:4px;color:var(--ink)}
+  .ib-warn ol{margin:6px 0 0;padding-left:18px}
+  .ib-warn li{margin:3px 0}
+  .ib-warn .btn{margin-top:9px}
+  .ib-x{float:right;background:none;border:none;font-size:18px;line-height:1;color:var(--ink-soft);cursor:pointer;padding:0 2px}
+  .lg{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:3px 9px;margin:0 6px 6px 0;font-size:12px;font-weight:700}
   .roster-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
   .roster-head button{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:6px 12px;font:inherit;font-weight:600;cursor:pointer;color:var(--ink);transition:all .15s ease-out}
   .roster-head button:hover{border-color:rgba(var(--accent-rgb),.35)}
@@ -259,8 +303,8 @@
     <div class="flow">
 
       <div class="step active" id="step-home">
-        <h2 class="center" style="margin-top:6px">Xin chào 👋</h2>
-        <p class="sub center">Bạn cần làm gì hôm nay? · Que voulez-vous faire ?</p>
+        <div id="inappWarn" style="display:none"></div>
+        <p class="sub center" style="margin-top:12px">Bạn cần làm gì hôm nay? · Que voulez-vous faire ?</p>
         <button class="action-card" onclick="EMP.toPunch()">
           <span class="ac-icon">⏱</span>
           <span class="ac-body">
@@ -387,8 +431,10 @@
         <div class="side-scrim" id="sideScrim" onclick="ADMIN.toggleMenu(false)"></div>
         <nav class="admin-side" id="adminSide">
           <button data-atab="today" class="active" id="todayTabBtn"><span class="si">🏠</span> Hôm nay<span class="badge" id="todayBadge" style="display:none"></span></button>
+          <button data-atab="notif"><span class="si">🔔</span> Thông báo<span class="badge" id="notifBadge" style="display:none"></span></button>
           <button data-atab="leave" id="leaveTabBtn"><span class="si">🌴</span> Nghỉ phép<span class="badge" id="leaveBadge" style="display:none"></span></button>
           <button data-atab="staff"><span class="si">👥</span> Nhân viên</button>
+          <button data-atab="sheet"><span class="si">📅</span> Bảng công cá nhân</button>
           <button data-atab="log"><span class="si">🕐</span> Lịch sử chấm công</button>
           <button data-atab="audit"><span class="si">✏️</span> Lịch sử sửa</button>
           <button data-atab="pay"><span class="si">📊</span> Tháng &amp; Lương</button>
@@ -398,17 +444,11 @@
 
       <div id="atab-today">
         <div class="card" id="notifPanel" style="display:none;margin-bottom:16px">
-          <div class="queue-head">Cần xử lý <span class="badge" id="npCount" style="background:var(--amber)"></span>
-            <button class="btn btn-sm" style="background:var(--muted);color:var(--ink);margin-left:auto" onclick="ADMIN.ackAll()" id="ackAllBtn">Ghi nhận tất cả</button>
+          <div class="queue-head">Cần xử lý hôm nay <span class="badge" id="npCount" style="background:var(--amber)"></span>
+            <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="ADMIN.goNotif()">Tất cả thông báo →</button>
+            <button class="btn btn-sm" style="background:var(--muted);color:var(--ink)" onclick="ADMIN.ackAll()" id="ackAllBtn">Ghi nhận tất cả</button>
           </div>
-          <div id="npLeaveWrap" style="display:none">
-            <p class="np-sub">🌴 Đơn nghỉ phép chờ duyệt (<span id="npLeaveN">0</span>)</p>
-            <div id="npLeave"></div>
-          </div>
-          <div id="npFlagsWrap" style="display:none">
-            <p class="np-sub">⚠ Cảnh báo chấm công &amp; thiết bị (<span id="npFlagsN">0</span>)</p>
-            <div id="flagList"></div>
-          </div>
+          <div id="flagList" style="margin-top:12px"></div>
         </div>
         <div class="offstrip" id="offStrip" style="display:none"></div>
         <div class="roster-head" id="dayHead"></div>
@@ -421,6 +461,15 @@
         <p class="muted" style="font-size:13px;margin-bottom:8px">Nhấn vào tên để xem &amp; sửa lượt chấm. <span class="fr-inline">Touchez un nom pour corriger les pointages.</span></p>
         <div id="shopNow" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px"></div>
         <div class="table-wrap"><table id="tblToday"></table></div>
+      </div>
+
+      <div id="atab-notif" style="display:none">
+        <div class="card">
+          <h2 class="card-h">Thông báo <span class="fr">Notifications</span></h2>
+          <p class="muted" style="font-size:13px;margin:4px 0 12px">Mọi cảnh báo chưa xử lý, 30 ngày gần nhất.</p>
+          <div class="nt-bar" id="ntChips"></div>
+          <div id="ntList"></div>
+        </div>
       </div>
 
       <div id="atab-leave" style="display:none">
@@ -452,6 +501,23 @@
           <div class="table-wrap"><table id="tblPay"></table></div>
         </div>
         <div id="payWarnings"></div>
+      </div>
+
+      <div id="atab-sheet" style="display:none">
+        <div class="card">
+          <h2 class="card-h">Bảng công cá nhân <span class="fr">Feuille de temps individuelle</span></h2>
+          <p class="muted" style="font-size:13px;margin:4px 0 10px">Từng ngày: giờ vào – giờ ra, tổng giờ, tiệm. <span class="fr-inline">Jour par jour.</span></p>
+          <div class="roster-head">
+            <select id="sheetEmp" class="num-input" style="width:auto;text-align:left;flex:1;min-width:180px" onchange="ADMIN.setSheetEmp(this.value)"></select>
+            <button id="sheetPrev" onclick="ADMIN.shiftSheetMonth(-1)">‹</button>
+            <b id="sheetMonthLbl"></b>
+            <button id="sheetNext" onclick="ADMIN.shiftSheetMonth(1)">›</button>
+          </div>
+          <div class="stat-row" id="sheetSummary"></div>
+          <div id="sheetCal"></div>
+          <div id="sheetLegend" style="margin-top:12px"></div>
+          <p class="muted" style="font-size:12.5px;margin-top:8px">Chỉ có dữ liệu 62 ngày gần nhất. <span class="fr-inline">62 derniers jours seulement.</span></p>
+        </div>
       </div>
 
       <div id="atab-log" style="display:none">
@@ -536,14 +602,92 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.22-02';   // bump on every deploy — powers the update banner
+const BUILD='v2026.07.23-04';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
+let DEVICE_FRESH = false;   // true when this visit had to mint a brand-new identity
 function deviceId(){
-  let d = localStorage.getItem('wt-device');
-  if(!d){ d = crypto.randomUUID(); localStorage.setItem('wt-device', d); }
+  let d = null;
+  try { d = localStorage.getItem('wt-device'); } catch(e){}
+  if(!d){                                    // second chance: a cookie often survives when localStorage does not
+    const m = document.cookie.match(/(?:^|; )wt-device=([^;]+)/);
+    if(m) d = decodeURIComponent(m[1]);
+  }
+  if(!d){ d = crypto.randomUUID(); DEVICE_FRESH = true; }
+  try { localStorage.setItem('wt-device', d); } catch(e){}
+  try { document.cookie = 'wt-device='+encodeURIComponent(d)+'; max-age=63072000; path=/; SameSite=Lax'; } catch(e){}
   return d;
+}
+
+
+/* ---------- in-app browsers (Zalo, Messenger, Instagram...) ----------
+   These hand out throwaway storage, so the phone gets a NEW identity on every
+   visit. That breaks buddy-punch detection and buries managers in false alerts.
+   iOS gives no way to force Safari open from inside a webview, so we cannot
+   redirect silently — we detect, explain, and offer the one-tap route we can.
+   We never block punching: clocking in always wins over tidy data. */
+function inAppBrowser(){
+  const u = navigator.userAgent || '';
+  if(/Zalo/i.test(u))                 return 'Zalo';
+  if(/FBAN|FBAV|FB_IAB/i.test(u))     return 'Facebook';
+  if(/Instagram/i.test(u))            return 'Instagram';
+  if(/Line\//i.test(u))               return 'LINE';
+  if(/MicroMessenger/i.test(u))       return 'WeChat';
+  return null;
+}
+const isStandalone = () =>
+  window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+function showBrowserHint(){
+  const box = document.getElementById('inappWarn');
+  if(!box) return;
+  if(isStandalone()) return;                       // already installed — nothing to nag about
+  if(sessionStorage.getItem('wt-hint-off')) return;
+  const app = inAppBrowser();
+  if(!app && !DEVICE_FRESH) return;                // normal browser, identity persisted — all good
+
+  const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const url = location.origin + location.pathname;
+  let steps;
+  if(app){
+    steps = iOS
+      ? `<li>Bấm nút <b>•••</b> hoặc <b>⇗</b> ở góc màn hình ${app}</li>
+         <li>Chọn <b>“Mở trong Safari”</b></li>
+         <li>Trong Safari: <b>Chia sẻ → Thêm vào MH chính</b></li>`
+      : `<li>Bấm nút <b>⋮</b> hoặc <b>•••</b> ở góc màn hình ${app}</li>
+         <li>Chọn <b>“Mở trong trình duyệt”</b> (Chrome)</li>
+         <li>Trong Chrome: <b>⋮ → Thêm vào màn hình chính</b></li>`;
+  } else {
+    steps = iOS
+      ? `<li>Safari: <b>Chia sẻ → Thêm vào MH chính</b></li>`
+      : `<li>Chrome: <b>⋮ → Thêm vào màn hình chính</b></li>`;
+  }
+  /* Reads as a usability tip on purpose. It must never describe how attendance
+     is verified — staff should not learn what the system notices. */
+  const title = app
+    ? `Dùng trình duyệt để có trải nghiệm tốt nhất`
+    : `Cài app để mở nhanh hơn`;
+  const why = app
+    ? `App chạy mượt hơn trên trình duyệt. Làm 1 lần, các lần sau mở là dùng ngay:`
+    : `Thêm vào màn hình chính, lần sau chỉ cần 1 chạm:`;
+
+  let html = `<div class="ib-warn">
+    <button class="ib-x" onclick="dismissHint()" aria-label="Đóng">×</button>
+    <b>${title}</b>${why}
+    <ol>${steps}</ol>`;
+  if(app && !iOS){
+    const intent = 'intent://'+url.replace(/^https?:\/\//,'')
+                 + '#Intent;scheme=https;package=com.android.chrome;end';
+    html += `<a class="btn btn-ghost btn-sm" href="${intent}">Mở trong Chrome</a>`;
+  }
+  html += `</div>`;
+  box.innerHTML = html;
+  box.style.display = '';
+}
+function dismissHint(){
+  try{ sessionStorage.setItem('wt-hint-off','1'); }catch(e){}
+  const b=document.getElementById('inappWarn'); if(b) b.style.display='none';
 }
 
 /* ---------- Paris time helpers (identical to the trial build) ---------- */
@@ -1025,7 +1169,39 @@ function buildDeviceFlags(acks){
       out.push({kind:'dev-multi', device:dev, date:d, empIds:[...m.keys()], fid});
     }
   }
-  // 2) employee punches from a device never seen for them before
+  /* 2) CROSS-DEVICE: punched from a phone whose main user is someone else.
+        Keyed by day, so it re-fires each day it happens — acknowledging today
+        never whitelists tomorrow. This is the buddy-punching net; it also
+        covers the case rule 1 misses (borrower punches on a day the phone's
+        owner does not punch from it at all). */
+  const devOwner = {};                                  // device -> employee with the most punches on it
+  const devTally = {};
+  for(const ev of events){
+    if(!ev.device) continue;
+    (devTally[ev.device] ||= {});
+    devTally[ev.device][ev.empId] = (devTally[ev.device][ev.empId]||0) + 1;
+  }
+  for(const [dev, tally] of Object.entries(devTally)){
+    const ranked = Object.entries(tally).sort((a,b)=>b[1]-a[1]);
+    // a clear majority owner only — a phone split evenly has no owner to speak of
+    if(ranked.length && (ranked.length===1 || ranked[0][1] > ranked[1][1])) devOwner[dev] = ranked[0][0];
+  }
+  const seenCross = new Set();
+  for(const ev of events){
+    if(!ev.device) continue;
+    const d = parisDay(ev.ts);
+    if(d < floor) continue;
+    const owner = devOwner[ev.device];
+    if(!owner || owner === ev.empId) continue;
+    const key = ev.empId+'|'+ev.device+'|'+d;
+    if(seenCross.has(key)) continue;
+    seenCross.add(key);
+    const fid = 'devcross-'+ev.empId+'-'+ev.device.slice(0,8)+'-'+d;
+    if(acks.has(fid)) continue;
+    out.push({kind:'dev-cross', empId:ev.empId, ownerId:owner, device:ev.device, date:d, ts:ev.ts, fid});
+  }
+
+  // 3) employee punches from a device never seen for them before
   const empDevs={};
   for(const ev of [...events].sort((a,b)=>a.ts-b.ts)){
     if(!ev.device) continue;
@@ -1034,6 +1210,16 @@ function buildDeviceFlags(acks){
   }
   for(const [empId,m] of Object.entries(empDevs)){
     if(m.size<2) continue;                      // one known device = nothing to compare
+    /* CHURN: a phone identity that resets constantly (Zalo's in-app browser, private
+       mode, cleared storage) would raise a "new device" alert on EVERY punch. That
+       noise trains managers to dismiss alerts, which quietly disables the whole
+       detection. Raise one standing, actionable alert instead. */
+    const punchCount = events.filter(ev=>ev.empId===empId && ev.device).length;
+    if(m.size >= 4 && m.size >= punchCount*0.8){
+      const fid = 'devchurn-'+empId;
+      if(!acks.has(fid)) out.push({kind:'dev-churn', empId, n:m.size, of:punchCount, ts:Date.now(), fid});
+      continue;                                 // and skip the per-device spam for this person
+    }
     const devs=[...m.entries()].sort((a,b)=>a[1]-b[1]);
     for(let i=1;i<devs.length;i++){             // every device after the first
       const [dev, firstTs]=devs[i];
@@ -1044,6 +1230,108 @@ function buildDeviceFlags(acks){
     }
   }
   return out;
+}
+
+
+/* ---------- alerts: one renderer, two surfaces ----------
+   Hôm nay shows only what a manager acts on today; Thông báo holds
+   everything, filterable. Both call alertCard() so wording can never drift. */
+function alertCat(f){
+  if(f.kind === 'leave-pending') return 'leave';
+  if(f.kind.indexOf('dev-') === 0) return 'device';
+  return 'punch';
+}
+function alertTs(f){
+  if(f.ts) return f.ts;
+  if(f.date) return Date.parse(f.date + 'T12:00:00Z');
+  return Date.now();
+}
+function whenLabel(ts){
+  const d = parisDay(ts), t = parisDay(Date.now());
+  if(d === t) return 'Hôm nay';
+  if(d === addDays(t,-1)) return 'Hôm qua';
+  const n = Math.round((Date.parse(t) - Date.parse(d)) / 864e5);
+  return n > 0 ? n + ' ngày trước' : fmtD(d);
+}
+function empName(id){ const e = employees.find(x=>x.id===id); return e ? esc(e.name) : id; }
+
+function alertCard(f){
+  const cat = alertCat(f);
+  const head = `<span class="flag-when">${whenLabel(alertTs(f))}</span>`;
+  const open = `<div class="flag-item nt-${cat}">${head}`;
+
+  if(f.kind === 'leave-pending'){
+    const r = f.r, e = employees.find(x=>x.id===r.empId);
+    const bal = e ? ptoBalance(e) : 0, after = bal - r.days;
+    return open + `<b>${empName(r.empId)}</b> — xin nghỉ <b>${fmtD(r.startDate)} → ${fmtD(r.endDate)}</b> (${r.days} ngày)${halfLabel(r)}
+      ${r.note ? `<br><span class="muted">«${esc(r.note)}»</span>` : ''}
+      <br><span class="muted" style="font-size:12.5px">Số dư ${bal.toFixed(1)} → còn <b style="color:${after<0?'var(--rose)':'var(--green)'}">${after.toFixed(1)}</b></span>
+      <div class="flag-resolve">
+        <button class="btn btn-green btn-sm" onclick="ADMIN.decideLeave('${r.id}','approved',${after})">Duyệt</button>
+        <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose)" onclick="ADMIN.decideLeave('${r.id}','rejected',0)">Từ chối</button>
+      </div></div>`;
+  }
+
+  if(f.kind === 'missing-out'){
+    return open + `<b>${empName(f.empId)}</b> — quên chấm RA<br>
+      <span class="muted" style="font-size:12.5px">${fmtD(parisDay(f.ts))} vào ${parisTime(f.ts)} · Tiệm ${f.shop} · đang tính <b>0 giờ</b></span>
+      <div class="flag-resolve">
+        <input type="time" id="fo-time-${f.inEventId}">
+        <input type="text" id="fo-note-${f.inEventId}" placeholder="Ghi chú (tùy chọn)">
+        <button class="btn btn-ink btn-sm" onclick="ADMIN.resolveMissingOut('${f.inEventId}','${f.empId}','${parisDay(f.ts)}',${f.ts})">Ghi giờ ra</button>
+      </div><div class="errline" id="fo-err-${f.inEventId}" style="text-align:left"></div></div>`;
+  }
+
+  if(f.kind === 'missing-in'){
+    return open + `<b>${empName(f.empId)}</b> — quên chấm VÀO<br>
+      <span class="muted" style="font-size:12.5px">${fmtD(parisDay(f.ts))} ra ${parisTime(f.ts)} · Tiệm ${f.shop} · đang tính <b>0 giờ</b></span>
+      <div class="flag-resolve">
+        <input type="time" id="fi-time-${f.eventId}">
+        <input type="text" id="fi-note-${f.eventId}" placeholder="Ghi chú (tùy chọn)">
+        <button class="btn btn-ink btn-sm" onclick="ADMIN.resolveMissingIn('${f.eventId}','${f.empId}','${parisDay(f.ts)}',${f.ts})">Ghi giờ vào</button>
+      </div><div class="errline" id="fi-err-${f.eventId}" style="text-align:left"></div></div>`;
+  }
+
+  if(f.kind === 'no-show'){
+    return open + `<b>${empName(f.empId)}</b> — vắng không phép · ${fmtD(f.date)}<br>
+      <span class="muted" style="font-size:12.5px">Không chấm công, không nghỉ tuần, không nghỉ phép.</span>
+      <div class="flag-resolve">
+        <button class="btn btn-ink btn-sm" onclick="ADMIN.ackNoShow('${f.empId}','${f.date}')">Ghi nhận vắng</button>
+        <span class="muted" style="font-size:12.5px">hoặc gán ngày nghỉ trong «Nghỉ phép»</span>
+      </div></div>`;
+  }
+
+  if(f.kind === 'dev-multi'){
+    const names = f.empIds.map(empName).join(', ');
+    return open + `<b>1 điện thoại · ${f.empIds.length} người</b> · ${fmtD(f.date)}<br>
+      <span class="muted" style="font-size:12.5px">${names} — hỏi trực tiếp trước khi kết luận.</span>
+      <div class="flag-resolve">
+        <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empIds[0]}')">Đã kiểm tra</button>
+      </div></div>`;
+  }
+
+  if(f.kind === 'dev-cross'){
+    return open + `<b>${empName(f.empId)}</b> dùng máy của <b>${empName(f.ownerId)}</b> · ${fmtD(f.date)}<br>
+      <span class="muted" style="font-size:12.5px">Mượn máy là bình thường — hỏi cho chắc. Hiện lại mỗi ngày nếu tiếp tục.</span>
+      <div class="flag-resolve">
+        <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Đã kiểm tra</button>
+      </div></div>`;
+  }
+
+  if(f.kind === 'dev-churn'){
+    return open + `<b>${empName(f.empId)}</b> — đang dùng Zalo để vào web<br>
+      <span class="muted" style="font-size:12.5px">Nhờ nhân viên mở trình duyệt độc lập (Safari/Chrome) và cài app vào màn hình chính. (${f.n}/${f.of} lượt)</span>
+      <div class="flag-resolve">
+        <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Đã nhắc</button>
+      </div></div>`;
+  }
+
+  /* dev-new */
+  return open + `<b>${empName(f.empId)}</b> — điện thoại mới<br>
+    <span class="muted" style="font-size:12.5px">${fmtD(parisDay(f.ts))} lúc ${parisTime(f.ts)} — xác nhận nếu đúng máy của họ.</span>
+    <div class="flag-resolve">
+      <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Máy mới hợp lệ</button>
+    </div></div>`;
 }
 
 async function loadAll(){
@@ -1080,6 +1368,7 @@ async function loadAll(){
 
 const ADMIN = {
   user:null, selectedEmp:null, weekOffset:0, payMonth:null, _pay:null,
+  sheetEmp:null, sheetMonthOffset:0, notifCat:'all', notifSort:'desc', _allAlerts:[],
 
   async enter(){
     const {data} = await sb.auth.getSession();
@@ -1171,7 +1460,7 @@ const ADMIN = {
       const hasFlag = flags.some(f=>f.empId===e.id);
       if(live) inCount++; else if(!isToday && mins>0) inCount++;
       const req = requiredMin(e.id, vd);         // 9h30, or 4h45 on a half-day PTO
-      const done = req>0 && mins>=req;
+      const done = req>0 && Math.round(mins)>=req;   // judge the displayed minute, not stray seconds
       if(done) fullCount++;
       const isOff = dayoffOn(e.id, vd), isPto = ptoOn(e.id, vd);
       let st;
@@ -1195,7 +1484,7 @@ const ADMIN = {
     document.getElementById('statIn').textContent = inCount+' / '+active.length;
     document.getElementById('statFull').textContent = fullCount;
     document.getElementById('statParis').textContent = parisNow().slice(0,5);
-    const totalAlerts = flags.length + devFlags.length;
+    const totalAlerts = flags.filter(f=>f.kind!=='no-show').length;   // stat box: unresolved punch gaps
     document.getElementById('statFlags').textContent = totalAlerts;
     document.getElementById('statFlagBox').classList.toggle('warn', totalAlerts>0);
     const pendCount = leave.filter(l=>l.type==='pto'&&l.status==='pending').length;
@@ -1220,22 +1509,10 @@ const ADMIN = {
     const pend = leave.filter(l=>l.type==='pto'&&l.status==='pending').sort((a,b)=>b.at-a.at);
     const lb=document.getElementById('leaveBadge');
     if(lb){ lb.textContent = pend.length; lb.style.display = pend.length ? '' : 'none'; }
-    const pendHtml = pend.length ? pend.map(r=>{
-      const e = employees.find(x=>x.id===r.empId);
-      const bal = e?ptoBalance(e):0, after = bal - r.days;
-      return `<div class="flag-item" style="background:var(--card);border-color:var(--line)">
-        <b>${e?e.name:r.empId}</b> — xin nghỉ <b>${fmtD(r.startDate)} → ${fmtD(r.endDate)}</b> (${r.days} ngày)${halfLabel(r)}
-        ${r.note?`<br><span class="muted">«${esc(r.note)}»</span>`:''}
-        <br><span class="muted" style="font-size:12.5px">Số dư: ${bal.toFixed(1)} → sau khi duyệt: <b style="color:${after<0?'var(--rose)':'var(--green)'}">${after.toFixed(1)}</b></span>
-        <div class="flag-resolve">
-          <button class="btn btn-green btn-sm" onclick="ADMIN.decideLeave('${r.id}','approved',${after})">Duyệt · Approuver</button>
-          <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose)" onclick="ADMIN.decideLeave('${r.id}','rejected',0)">Từ chối · Refuser</button>
-        </div></div>`;
-    }).join('') : '<div class="card center" style="padding:22px"><div style="font-size:15px;font-weight:600;color:var(--green)">Tất cả đơn đã xử lý ✓</div><div class="muted" style="font-size:13px;margin-top:4px">Không có đơn nghỉ phép nào đang chờ · Aucune demande en attente</div></div>';
+    const pendHtml = pend.length
+      ? pend.map(r=>alertCard({kind:'leave-pending', empId:r.empId, ts:r.at, r})).join('')
+      : '<div class="card center" style="padding:22px"><div style="font-size:15px;font-weight:600;color:var(--green)">Tất cả đơn đã xử lý ✓</div><div class="muted" style="font-size:13px;margin-top:4px">Không có đơn nào đang chờ · Aucune demande en attente</div></div>';
     document.getElementById('pendingQueue').innerHTML = pendHtml;
-    document.getElementById('npLeave').innerHTML = pend.length ? pendHtml : '';
-    document.getElementById('npLeaveWrap').style.display = pend.length ? '' : 'none';
-    document.getElementById('npLeaveN').textContent = pend.length;
 
     /* ----- leave: decision log — who approved what, when ----- */
     const decided = leave.filter(l=>l.type==='pto' && l.status!=='pending' && l.decidedAt)
@@ -1285,6 +1562,8 @@ const ADMIN = {
     }).join('')+'</tr>';
     document.getElementById('tblRoster').innerHTML = rrows;
 
+    this.renderSheet(sessions, flags);
+
     /* ----- payroll export ----- */
     const pm = this.payMonth || parisMonth(Date.now());
     let opts='', [oy,om] = parisMonth(Date.now()).split('-').map(Number);
@@ -1306,8 +1585,8 @@ const ADMIN = {
               .forEach(s=>{ const d=parisDay(s.start); dayMap[d]=(dayMap[d]||0)+sessMin(s); });
       const daysW=Object.keys(dayMap).length;
       const totalM=Object.values(dayMap).reduce((a,b)=>a+b,0);
-      const full=Object.values(dayMap).filter(m=>m>=FULL_DAY_MIN).length;
-      const partial=Object.values(dayMap).filter(m=>m>0&&m<FULL_DAY_MIN).length;
+      const full=Object.values(dayMap).filter(m=>Math.round(m)>=FULL_DAY_MIN).length;
+      const partial=Object.values(dayMap).filter(m=>m>0&&Math.round(m)<FULL_DAY_MIN).length;
       const ptoD=mdays.reduce((a,d)=>{
         const cov=leave.filter(l=>l.type==='pto'&&l.empId===e.id&&l.status==='approved'&&l.startDate<=d&&l.endDate>=d)
                        .reduce((x,l)=>x+(l.half?0.5:1),0);
@@ -1371,75 +1650,27 @@ const ADMIN = {
     });
     document.getElementById('tblLog').innerHTML = lrows;
 
-    /* ----- flags queue ----- */
-    flags.sort((a,b)=>(b.ts||Date.parse(b.date))-(a.ts||Date.parse(a.date)));
-    devFlags.sort((a,b)=>(b.ts||Date.parse(b.date))-(a.ts||Date.parse(a.date)));
-    this._ackables = flags.filter(f=>f.kind==='no-show').map(f=>({employee_id:f.empId, synthetic_ref:f.fid}))
-      .concat(devFlags.map(f=>({employee_id:(f.empId||f.empIds[0]), synthetic_ref:f.fid})));
-    const totalNp = flags.length + devFlags.length;
-    document.getElementById('npFlagsWrap').style.display = totalNp ? '' : 'none';
-    document.getElementById('npFlagsN').textContent = totalNp;
-    document.getElementById('npCount').textContent = totalNp + pend.length;
-    document.getElementById('notifPanel').style.display = (totalNp + pend.length) ? '' : 'none';
+    /* ----- alerts: Hôm nay keeps only today's work; the rest lives in Thông báo ----- */
+    const pendAlerts = pend.map(r=>({kind:'leave-pending', empId:r.empId, ts:r.at, r}));
+    const allAlerts = pendAlerts.concat(flags, devFlags).sort((a,b)=>alertTs(b)-alertTs(a));
+    this._allAlerts = allAlerts;
+
+    const freshFrom = addDays(today,-1);                       // today + yesterday
+    const TODAY_KINDS = new Set(['missing-out','missing-in','dev-multi','dev-cross','dev-new']);
+    const todayAlerts = allAlerts.filter(f =>
+      f.kind === 'leave-pending'                               // a decision never goes stale
+      || (TODAY_KINDS.has(f.kind) && parisDay(alertTs(f)) >= freshFrom));
+
+    /* "Ghi nhận tất cả" clears routine confirmations only. Buddy-punch evidence
+       (dev-multi / dev-cross) is deliberately excluded — it must be read one by one. */
+    this._ackables = todayAlerts.filter(f=>f.kind==='dev-new')
+      .map(f=>({employee_id:f.empId, synthetic_ref:f.fid}));
+
+    document.getElementById('npCount').textContent = todayAlerts.length;
+    document.getElementById('notifPanel').style.display = todayAlerts.length ? '' : 'none';
     document.getElementById('ackAllBtn').style.display = this._ackables.length ? '' : 'none';
-    const fl=document.getElementById('flagList');
-    if(totalNp===0){
-      fl.innerHTML='';
-    } else {
-      fl.innerHTML = flags.map(f=>{
-        const e=employees.find(x=>x.id===f.empId);
-        const nm=e?e.name:f.empId;
-        if(f.kind==='missing-out'){
-          return `<div class="flag-item"><b>${nm}</b> — Quên chấm công RA <span class="fr-inline">Sortie manquante</span><br>
-            <span class="muted">Vào ${parisDay(f.ts)} lúc ${parisTime(f.ts)} · Tiệm ${f.shop}</span><br>
-            <span class="muted" style="font-size:12.5px">Đã tự đóng lúc nửa đêm — ngày này đang tính <b>0 giờ</b>.</span>
-            <div class="flag-resolve">
-              <label style="font-size:13px;font-weight:700">Giờ ra thật · Sortie réelle</label>
-              <input type="time" id="fo-time-${f.inEventId}">
-              <input type="text" id="fo-note-${f.inEventId}" placeholder="Ghi chú · Note (tùy chọn)">
-              <button class="btn btn-ink btn-sm" onclick="ADMIN.resolveMissingOut('${f.inEventId}','${f.empId}','${parisDay(f.ts)}',${f.ts})">Ghi giờ ra · Enregistrer</button>
-            </div><div class="errline" id="fo-err-${f.inEventId}" style="text-align:left"></div></div>`;
-        }
-        if(f.kind==='missing-in'){
-          return `<div class="flag-item"><b>${nm}</b> — Quên chấm công VÀO <span class="fr-inline">Arrivée manquante</span><br>
-            <span class="muted">Chấm RA ${parisDay(f.ts)} lúc ${parisTime(f.ts)} · Tiệm ${f.shop}</span><br>
-            <span class="muted" style="font-size:12.5px">Không có giờ vào — ngày này đang tính <b>0 giờ</b>.</span>
-            <div class="flag-resolve">
-              <label style="font-size:13px;font-weight:700">Giờ vào thật · Arrivée réelle</label>
-              <input type="time" id="fi-time-${f.eventId}">
-              <input type="text" id="fi-note-${f.eventId}" placeholder="Ghi chú · Note (tùy chọn)">
-              <button class="btn btn-ink btn-sm" onclick="ADMIN.resolveMissingIn('${f.eventId}','${f.empId}','${parisDay(f.ts)}',${f.ts})">Ghi giờ vào · Enregistrer</button>
-            </div><div class="errline" id="fi-err-${f.eventId}" style="text-align:left"></div></div>`;
-        }
-        return `<div class="flag-item"><b>${nm}</b> — Vắng không phép ngày <b>${fmtD(f.date)}</b> <span class="fr-inline">Absence non justifiée</span><br>
-          <span class="muted" style="font-size:12.5px">Không chấm công, không ngày nghỉ tuần, không nghỉ phép được duyệt.</span>
-          <div class="flag-resolve">
-            <button class="btn btn-ink btn-sm" onclick="ADMIN.ackNoShow('${f.empId}','${f.date}')">Ghi nhận vắng · Confirmer</button>
-            <span class="muted" style="font-size:12.5px">hoặc gán ngày nghỉ trong «Nghỉ phép»</span>
-          </div></div>`;
-      }).join('');
-      if(devFlags.length){
-        fl.innerHTML += '<p class="muted" style="font-size:13px;font-weight:700;margin:14px 0 8px">📱 Cảnh báo thiết bị — chỉ để kiểm tra, KHÔNG ảnh hưởng lương <span class="fr-inline">Alertes appareil — informatif</span></p>'
-          + devFlags.map(f=>{
-            if(f.kind==='dev-multi'){
-              const names=f.empIds.map(id=>{ const e2=employees.find(x=>x.id===id); return e2?e2.name:id; }).join(', ');
-              return `<div class="flag-item flag-dev"><b>Một điện thoại chấm cho ${f.empIds.length} người</b> — ngày ${fmtD(f.date)}<br>
-                <span class="muted">${names} · thiết bị ${f.device.slice(0,8)}…</span><br>
-                <span class="muted" style="font-size:12.5px">Có thể là chấm hộ — hỏi trực tiếp trước khi kết luận.</span>
-                <div class="flag-resolve">
-                  <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empIds[0]}')">Đã kiểm tra · Vérifié</button>
-                </div></div>`;
-            }
-            const e2=employees.find(x=>x.id===f.empId);
-            return `<div class="flag-item flag-dev"><b>${e2?e2.name:f.empId}</b> — chấm bằng điện thoại mới lần đầu<br>
-              <span class="muted">${parisDay(f.ts)} lúc ${parisTime(f.ts)} · thiết bị ${f.device.slice(0,8)}…</span><br>
-              <span class="muted" style="font-size:12.5px">Đổi điện thoại là bình thường — xác nhận nếu đúng là máy của họ.</span>
-              <div class="flag-resolve">
-                <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Máy mới hợp lệ · Confirmé</button>
-              </div></div>`;
-          }).join('');
-      }
-    }
+    document.getElementById('flagList').innerHTML = todayAlerts.map(alertCard).join('');
+    this.renderNotif();
 
     /* ----- audit ----- */
     const al=document.getElementById('auditList');
@@ -1491,7 +1722,7 @@ const ADMIN = {
         <button class="btn btn-sm" style="background:var(--rose-soft);color:var(--rose)" onclick="event.stopPropagation();ADMIN.voidEvent('${ev.id}','${ev.empId}',${ev.ts})">Hủy lượt</button>
       </div>`;
     });
-    h += `<button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="event.stopPropagation();ADMIN.goLog('${e.name.replace(/'/g,"\\'")}')">Xem cả tháng trong Lịch sử chấm công →</button>`;
+    h += `<button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="event.stopPropagation();ADMIN.goSheet('${e.id}')">Xem cả tháng của ${esc(e.name)} →</button>`;
     return `<div onclick="event.stopPropagation()">${h}</div>`;
   },
   goLog(name){
@@ -1502,7 +1733,7 @@ const ADMIN = {
   async ackAll(){
     const items=this._ackables||[];
     if(!items.length) return;
-    if(!confirm(`Ghi nhận ${items.length} mục (vắng không phép & cảnh báo thiết bị)?\nCác mục cần nhập giờ hoặc duyệt đơn vẫn giữ nguyên.`)) return;
+    if(!confirm(`Xác nhận ${items.length} máy mới hợp lệ?\nCảnh báo chấm hộ và các mục cần nhập giờ vẫn giữ nguyên.`)) return;
     const rows=items.map(x=>({kind:'ack', employee_id:x.employee_id, synthetic_ref:x.synthetic_ref, manager_id:this.user.id}));
     const {error}=await sb.from('corrections').insert(rows);
     if(error) alert('Lỗi: '+error.message);
@@ -1523,7 +1754,7 @@ const ADMIN = {
       const e=employees.find(x=>x.id===ev.empId);
       lines.push([parisDay(ev.ts), parisTime(ev.ts), ev.type==='in'?'VÀO':'RA', q(e?e.name:ev.empId), 'Tiệm '+ev.shop, ev.corrected?'x':''].join(','));
     });
-    const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+    const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
     a.download='lich-su-cham-cong-'+parisMonth(Date.now())+'.csv';
@@ -1575,6 +1806,112 @@ const ADMIN = {
     const today = parisDay(Date.now());
     this.viewDay = (v && v < today) ? v : null;
     this.refresh();
+  },
+
+  /* --- notifications: everything, filterable --- */
+  goNotif(){ const b=document.querySelector('.admin-side button[data-atab="notif"]'); if(b) b.click(); },
+  setNotifCat(c){ this.notifCat=c; this.renderNotif(); },
+  toggleNotifSort(){ this.notifSort = (this.notifSort==='asc') ? 'desc' : 'asc'; this.renderNotif(); },
+  renderNotif(){
+    const box=document.getElementById('ntList'); if(!box) return;
+    const all=this._allAlerts||[], cat=this.notifCat||'all';
+    const counts={all:all.length, punch:0, leave:0, device:0};
+    all.forEach(f=>counts[alertCat(f)]++);
+    document.getElementById('ntChips').innerHTML =
+      [['all','Tất cả'],['punch','Chấm công'],['leave','Nghỉ phép'],['device','Thiết bị']]
+        .map(([k,l])=>`<button class="nt-chip${cat===k?' on':''}" onclick="ADMIN.setNotifCat('${k}')">${l}<span class="n">${counts[k]}</span></button>`).join('')
+      + `<button class="nt-chip" style="margin-left:auto" onclick="ADMIN.toggleNotifSort()">${this.notifSort==='asc'?'Cũ nhất ↑':'Mới nhất ↓'}</button>`;
+    const list=(cat==='all' ? all.slice() : all.filter(f=>alertCat(f)===cat))
+      .sort((a,b)=> this.notifSort==='asc' ? alertTs(a)-alertTs(b) : alertTs(b)-alertTs(a));
+    box.innerHTML = list.length ? list.map(alertCard).join('')
+      : '<div class="nt-empty">Không có thông báo nào ✓</div>';
+    const nb=document.getElementById('notifBadge');
+    if(nb){ nb.textContent=all.length; nb.style.display = all.length ? '' : 'none'; }
+  },
+
+  /* --- personal monthly timesheet: one person, every day --- */
+  setSheetEmp(v){ this.sheetEmp=v; this.refresh(); },
+  shiftSheetMonth(n){ this.sheetMonthOffset=Math.min(0, Math.max(-2, (this.sheetMonthOffset||0)+n)); this.refresh(); },
+  goSheet(id){
+    this.sheetEmp=id; this.sheetMonthOffset=0;
+    const b=document.querySelector('.admin-side button[data-atab="sheet"]');
+    if(b) b.click();
+  },
+  renderSheet(sessions, flags){
+    const sel=document.getElementById('sheetEmp'); if(!sel) return;
+    const act=employees.filter(e=>e.active).sort((a,b)=>a.name.localeCompare(b.name,'vi'));
+    if(!act.length){ document.getElementById('sheetCal').innerHTML='<p class="muted">Chưa có nhân viên.</p>'; return; }
+    if(!this.sheetEmp || !act.some(e=>e.id===this.sheetEmp)) this.sheetEmp=act[0].id;
+    sel.innerHTML=act.map(e=>`<option value="${e.id}" ${e.id===this.sheetEmp?'selected':''}>${esc(e.name)}</option>`).join('');
+    const emp=act.find(e=>e.id===this.sheetEmp);
+
+    const today=parisDay(Date.now());
+    const [ty,tm]=parisMonth(Date.now()).split('-').map(Number);
+    let my=ty, mm=tm+(this.sheetMonthOffset||0);
+    while(mm<1){ mm+=12; my--; } while(mm>12){ mm-=12; my++; }
+    const mk=my+'-'+String(mm).padStart(2,'0');
+    document.getElementById('sheetMonthLbl').textContent=`Tháng ${mm}/${my}`;
+    document.getElementById('sheetPrev').disabled=(this.sheetMonthOffset||0)<=-2;
+    document.getElementById('sheetNext').disabled=(this.sheetMonthOffset||0)>=0;
+
+    const dim=new Date(Date.UTC(my,mm,0)).getUTCDate();
+    const firstTs=events.filter(ev=>ev.empId===emp.id).reduce((a,ev)=>Math.min(a,ev.ts), Infinity);
+    const firstDay=firstTs===Infinity?null:parisDay(firstTs);
+    const holSet=new Set(holidays.map(h=>h.date));
+
+    const days=[];
+    for(let i=1;i<=dim;i++){
+      const d=mk+'-'+String(i).padStart(2,'0');
+      const ds=sessions.filter(x=>x.empId===emp.id&&parisDay(x.start)===d).sort((a,b)=>a.start-b.start);
+      const mins=minutesForDay(emp.id,d,sessions), req=requiredMin(emp.id,d);
+      const needsFix=flags.some(f=>f.empId===emp.id&&(f.kind==='missing-out'||f.kind==='missing-in')&&f.ts&&parisDay(f.ts)===d);
+      const live=ds.some(x=>x.end===null);
+      /* only call it an absence in a week the manager actually rostered - otherwise we simply do not know */
+      const rostered=leave.some(l=>l.type==='dayoff'&&l.empId===emp.id&&weekMonday(l.date)===weekMonday(d));
+      let st;
+      if(d>today) st='future';
+      else if(firstDay&&d<firstDay) st='none';
+      else if(live) st='live';
+      else if(needsFix) st='fix';
+      else if(mins>0) st=(req>0&&Math.round(mins)<req)?'short':'done';
+      else if(ptoOn(emp.id,d)) st='pto';
+      else if(dayoffOn(emp.id,d)) st='off';
+      else st=rostered?'abs':'none';
+      days.push({d:d,i:i,ds:ds,mins:mins,st:st, sun:new Date(d+'T12:00:00Z').getUTCDay()===0, hol:holSet.has(d),
+                 corrected:ds.some(x=>x.corrected), shopsUsed:[...new Set(ds.map(x=>x.shop))]});
+    }
+
+    const LBL={done:'Đủ công',short:'Thiếu giờ',fix:'Cần sửa',pto:'Nghỉ phép',off:'Nghỉ tuần',abs:'Vắng',live:'Đang làm',none:'',future:''};
+    const GLY={done:'✓',short:'!',fix:'⚠',pto:'P',off:'–',abs:'✗',live:'●',none:'',future:''};
+    const lead=(new Date(mk+'-01T00:00:00Z').getUTCDay()+6)%7;
+    let cal='<div class="cal">'+['T2','T3','T4','T5','T6','T7','CN'].map(w=>`<div class="cal-h">${w}</div>`).join('');
+    for(let i=0;i<lead;i++) cal+='<div class="cal-c cal-empty"></div>';
+    for(const x of days){
+      const last=x.ds[x.ds.length-1];
+      const range=x.ds.length?parisTime(x.ds[0].start)+' – '+(last.end?parisTime(last.end):'…'):'';
+      const marks=[ x.ds.length>1?x.ds.length+' lượt':'', x.corrected?'✏️':'',
+                    (shops.length>1&&x.shopsUsed.length)?x.shopsUsed.map(v=>'T'+v).join('/'):'' ].filter(Boolean).join(' · ');
+      cal+=`<div class="cal-c st-${x.st}">
+        <div><span class="d"${x.sun||x.hol?' style="color:var(--accent)"':''}>${x.i}</span>${x.hol?' <span class="cal-t">Lễ</span>':x.sun?' <span class="cal-t">CN</span>':''}</div>
+        ${x.mins>0?`<div class="h">${fmtMin(x.mins)}</div>`:''}
+        ${range?`<div class="cal-r">${range}</div>`:''}
+        ${LBL[x.st]?`<div class="cal-s">${GLY[x.st]} ${LBL[x.st]}</div>`:''}
+        ${marks?`<div class="cal-m">${marks}</div>`:''}
+      </div>`;
+    }
+    document.getElementById('sheetCal').innerHTML=cal+'</div>';
+
+    const cnt=k=>days.filter(x=>x.st===k).length;
+    const tot=days.reduce((a,x)=>a+x.mins,0);
+    document.getElementById('sheetSummary').innerHTML=`
+      <div class="stat"><b>${fmtMin(tot)}</b><span>Tổng giờ · Total</span></div>
+      <div class="stat"><b>${cnt('done')}</b><span>Đủ công · Complets</span></div>
+      <div class="stat"><b>${cnt('short')}</b><span>Thiếu giờ · Incomplets</span></div>
+      <div class="stat"><b>${cnt('fix')}</b><span>Cần sửa · À corriger</span></div>
+      <div class="stat"><b>${cnt('pto')}</b><span>Nghỉ phép · Congés</span></div>
+      <div class="stat"><b>${cnt('abs')}</b><span>Vắng · Absences</span></div>`;
+    document.getElementById('sheetLegend').innerHTML=
+      ['done','short','fix','pto','off','abs','live'].map(k=>`<span class="lg st-${k}">${GLY[k]} ${LBL[k]}</span>`).join('');
   },
 
   /* --- staff: search, sort, bulk add, kiosk links --- */
@@ -1837,7 +2174,7 @@ const ADMIN = {
     return lines.join('\n');
   },
   downloadCSV(){
-    const csv='\uFEFF'+this._csvRows(',');
+    const csv='﻿'+this._csvRows(',');
     const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
@@ -1857,8 +2194,10 @@ const ADMIN = {
 };
 const TAB_GROUPS = {
   today: ['today'],
+  notif: ['notif'],
   leave: ['leave'],
   staff: ['staff'],
+  sheet: ['sheet'],
   log:   ['log'],
   audit: ['audit'],
   pay:   ['export'],
@@ -1927,6 +2266,8 @@ setInterval(checkUpdate, 30*60*1000);
     history.replaceState(null, '', location.pathname);  // don't keep the code in the address bar
     EMP.autoScan(+Q.get('shop'), Q.get('code'));
   }
+  deviceId();          // resolve identity first so DEVICE_FRESH is accurate
+  showBrowserHint();
   setInterval(()=>{ 
     if(document.getElementById('adminApp').style.display!=='none'
        && document.getElementById('view-admin').classList.contains('active')) ADMIN.refresh();
