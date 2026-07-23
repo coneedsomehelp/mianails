@@ -137,8 +137,28 @@
     .admin-side.open{transform:translateX(0)}
     .side-scrim.open{display:block;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:49}
     #view-admin .menu-btn{position:fixed;bottom:18px;left:18px;z-index:48;border-radius:99px;padding:13px 18px;box-shadow:var(--sh-lg)}
+    #view-admin .fab-noti.on{display:flex}
+    /* Tables squeezed instead of scrolling: width:100% forced every column to
+       shrink. Size to content and let .table-wrap scroll. The name column pins
+       left so a scrolled row still says who it belongs to. */
+    .table-wrap table{width:max-content;min-width:100%}
+    .table-wrap tr:not(.detail-tr) > :first-child{position:sticky;left:0;z-index:2;
+      background:var(--card);box-shadow:1px 0 0 var(--line)}
+    .table-wrap tr:not(.detail-tr) > th:first-child{background:var(--muted)}
+    tr.clickable:hover > td:first-child{background:var(--muted)}
+    /* 7 day-columns cannot fit a phone: scroll rather than crush them */
+    #sheetCal{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+    #sheetCal .cal{min-width:660px}
     #updBar{bottom:86px !important}
   }
+  /* mobile-only shortcut to Thông báo — the drawer is two taps away, this is one */
+  .fab-noti{display:none;position:fixed;bottom:18px;right:18px;z-index:48;align-items:center;justify-content:center;
+    width:56px;height:56px;border:none;border-radius:99px;background:var(--grad);color:#fff;font-size:23px;
+    box-shadow:var(--sh-lg);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .fab-noti:active{transform:scale(.94)}
+  .fab-noti .fab-n{position:absolute;top:-3px;right:-3px;min-width:22px;height:22px;padding:0 5px;border-radius:99px;
+    background:var(--amber);color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--paper);font-variant-numeric:tabular-nums}
   .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--sh-sm)}
   .stat b{font-size:26px;font-weight:700;display:block;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
@@ -429,6 +449,7 @@
       </div>
       <div class="admin-shell">
         <div class="side-scrim" id="sideScrim" onclick="ADMIN.toggleMenu(false)"></div>
+        <button class="fab-noti" id="fabNoti" onclick="ADMIN.goNotif()" aria-label="Thông báo">🔔<span class="fab-n" id="fabNotiN"></span></button>
         <nav class="admin-side" id="adminSide">
           <button data-atab="today" class="active" id="todayTabBtn"><span class="si">🏠</span> Hôm nay<span class="badge" id="todayBadge" style="display:none"></span></button>
           <button data-atab="notif"><span class="si">🔔</span> Thông báo<span class="badge" id="notifBadge" style="display:none"></span></button>
@@ -598,7 +619,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.23-07';   // bump on every deploy — powers the update banner
+const BUILD='v2026.07.23-09';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -1815,6 +1836,15 @@ const ADMIN = {
 
   /* --- notifications: everything, filterable --- */
   goNotif(){ const b=document.querySelector('.admin-side button[data-atab="notif"]'); if(b) b.click(); },
+  syncFab(){
+    const f=document.getElementById('fabNoti'); if(!f) return;
+    const cur=document.querySelector('.admin-side button.active');
+    const onNotif = cur && cur.dataset.atab==='notif';
+    const n=(this._allAlerts||[]).length;
+    document.getElementById('fabNotiN').textContent = n;
+    document.getElementById('fabNotiN').style.display = n ? '' : 'none';
+    f.classList.toggle('on', n>0 && !onNotif);      // nothing to jump to = no button
+  },
   setNotifCat(c){ this.notifCat=c; this.renderNotif(); },
   toggleNotifSort(){ this.notifSort = (this.notifSort==='asc') ? 'desc' : 'asc'; this.renderNotif(); },
   renderNotif(){
@@ -1832,6 +1862,7 @@ const ADMIN = {
       : '<div class="nt-empty">Không có thông báo nào ✓</div>';
     const nb=document.getElementById('notifBadge');
     if(nb){ nb.textContent=all.length; nb.style.display = all.length ? '' : 'none'; }
+    this.syncFab();
   },
 
   /* --- personal monthly timesheet: one person, every day --- */
@@ -2220,6 +2251,7 @@ document.querySelectorAll('.admin-side button').forEach(b=>{
       if(el) el.style.display = show.includes(t) ? '' : 'none';
     });
     ADMIN.toggleMenu(false);   // close drawer on mobile after picking
+    ADMIN.syncFab();
     ADMIN.refresh();
   };
 });
