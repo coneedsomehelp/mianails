@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Chấm công · Pointage</title>
 <meta name="theme-color" content="#C13567">
-<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💅</text></svg>">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Chấm công">
@@ -619,7 +619,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.07.23-09';   // bump on every deploy — powers the update banner
+const BUILD='v2026.09.02-01';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -660,7 +660,9 @@ function showBrowserHint(){
   const box = document.getElementById('inappWarn');
   if(!box) return;
   if(isStandalone()) return;                       // already installed — nothing to nag about
-  if(sessionStorage.getItem('wt-hint-off')) return;
+  let dismissed=false;
+  try{ dismissed = !!sessionStorage.getItem('wt-hint-off'); }catch(e){}  // some browsers throw on storage access
+  if(dismissed) return;
   const app = inAppBrowser();
   if(!app && !DEVICE_FRESH) return;                // normal browser, identity persisted — all good
 
@@ -2305,8 +2307,8 @@ setInterval(checkUpdate, 30*60*1000);
     history.replaceState(null, '', location.pathname);  // don't keep the code in the address bar
     EMP.autoScan(+Q.get('shop'), Q.get('code'));
   }
-  deviceId();          // resolve identity first so DEVICE_FRESH is accurate
-  showBrowserHint();
+  try { deviceId(); showBrowserHint(); }   // a banner failure must never blank the app
+  catch(e){ console.warn('browser hint skipped:', e); }
   setInterval(()=>{ 
     if(document.getElementById('adminApp').style.display!=='none'
        && document.getElementById('view-admin').classList.contains('active')) ADMIN.refresh();
