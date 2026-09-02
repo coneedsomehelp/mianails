@@ -539,11 +539,12 @@
 
       <div id="atab-log" style="display:none">
         <div class="roster-head">
-          <input id="logSearch" class="num-input" style="width:auto;flex:1;min-width:160px;text-align:left" placeholder="Tìm theo tên · Rechercher" oninput="ADMIN.setLogQuery(this.value)">
+          <select id="logMonth" class="num-input" style="width:auto;text-align:left" onchange="ADMIN.setLogMonth(this.value)"></select>
+          <input id="logSearch" class="num-input" style="width:auto;flex:1;min-width:140px;text-align:left" placeholder="Tìm theo tên · Rechercher" oninput="ADMIN.setLogQuery(this.value)">
           <button id="logSortBtn" onclick="ADMIN.toggleLogSort()">Mới nhất trước</button>
           <button onclick="ADMIN.exportLog()">Tải CSV</button>
         </div>
-        <p class="muted" style="font-size:13px;margin-bottom:8px">Mọi lượt chấm trong tháng này. <span class="fr-inline">Tous les pointages du mois.</span></p>
+        <p class="muted" style="font-size:13px;margin-bottom:8px">Chọn tháng để xem lịch sử (tối đa 12 tháng). <span class="fr-inline">Choisissez le mois.</span></p>
         <div class="table-wrap"><table id="tblLog"></table></div>
       </div>
 
@@ -619,7 +620,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.09.02-02';   // bump on every deploy — powers the update banner
+const BUILD='v2026.09.02-04';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -1057,6 +1058,21 @@ const EMP = {
 ===================================================== */
 let employees=[], events=[], corrections=[], leave=[], shops=[], mgrNames={}, managersList=[], holidays=[];
 
+function effectiveEventsFrom(evSrc, corrSrc){
+  const edits={}, voids=new Set(), addOuts={}, addIns={}, acks=new Set();
+  for(const c of corrSrc){
+    if(c.kind==='edit')    edits[c.eventId]=c;
+    if(c.kind==='void')    voids.add(c.eventId);
+    if(c.kind==='add-out') addOuts[c.eventId]=c;
+    if(c.kind==='add-in')  addIns[c.eventId]=c;
+    if(c.kind==='ack')     acks.add(c.syntheticRef || c.eventId);
+  }
+  const evs = evSrc
+    .filter(e=>!voids.has(e.id))
+    .map(e=> edits[e.id] ? {...e, ts:edits[e.id].newTs, corrected:true} : {...e})
+    .sort((a,b)=>a.ts-b.ts);
+  return {evs, addOuts, addIns, acks};
+}
 function effectiveEvents(){
   const edits={}, voids=new Set(), addOuts={}, addIns={}, acks=new Set();
   for(const c of corrections){
@@ -1072,8 +1088,10 @@ function effectiveEvents(){
     .sort((a,b)=>a.ts-b.ts);
   return {evs, addOuts, addIns, acks};
 }
-function buildSessions(){
-  const {evs, addOuts, addIns, acks} = effectiveEvents();
+function buildSessions(srcEvents, srcCorr){
+  const {evs, addOuts, addIns, acks} = (srcEvents!==undefined)
+    ? effectiveEventsFrom(srcEvents, srcCorr)
+    : effectiveEvents();
   const byEmp={};
   for(const ev of evs){ (byEmp[ev.empId] ||= []).push(ev); }
   const sessions=[], flags=[];
@@ -1373,6 +1391,43 @@ async function fetchAll(builder, order, opts){
   return all;
 }
 
+/* Daily screens (Hôm nay, calendar, alerts) run off the fast 62-day window.
+   Tháng & Lương and the log tab can look back further: monthData() serves the
+   selected month from the already-loaded globals when it falls inside the
+   window, and otherwise fetches just that month once and caches it. This keeps
+   the everyday screens light while letting reports reach back a full year+. */
+const LOADED_WINDOW_DAYS = 62;
+const _monthCache = {};   // 'YYYY-MM' -> {events, corrections}
+function monthInGlobals(pm){
+  const floor = parisDay(Date.now() - LOADED_WINDOW_DAYS*864e5);
+  return pm >= floor.slice(0,7);
+}
+async function monthData(pm){
+  if(monthInGlobals(pm)) return {events, corrections};      // already in memory
+  if(_monthCache[pm]) return _monthCache[pm];               // fetched earlier this session
+  const start = pm+'-01T00:00:00Z';
+  const [y,m] = pm.split('-').map(Number);
+  const end = (m===12? (y+1)+'-01' : y+'-'+String(m+1).padStart(2,'0'))+'-01T00:00:00Z';
+  // punches by ts; corrections span a wider net so an add-out logged later still applies
+  const [pRows, cRows] = await Promise.all([
+    fetchAll(()=>sb.from('punches').select('*').gte('ts', start).lt('ts', end), 'ts', {ascending:true}),
+    fetchAll(()=>sb.from('corrections').select('*'), 'created_at', {ascending:true}),
+  ]);
+  const ev = (pRows||[]).map(p=>({ id:p.id, empId:String(p.employee_id), shop:p.shop_id,
+    type:p.type, ts:Date.parse(p.ts), device:p.device_uuid, ip:p.ip }));
+  const cr = (cRows||[]).map(c=>({ id:c.id, kind:c.kind, eventId:c.punch_id,
+    syntheticRef:c.synthetic_ref, empId:String(c.employee_id),
+    oldTs:c.old_ts?Date.parse(c.old_ts):null, newTs:c.new_ts?Date.parse(c.new_ts):null,
+    note:c.note, by:mgrNames[c.manager_id]||'Quản lý', at:Date.parse(c.created_at) }));
+  return (_monthCache[pm] = {events:ev, corrections:cr});
+}
+/* how many months back to offer — one year minimum */
+function historyMonths(n){
+  const out=[]; let [y,m]=parisMonth(Date.now()).split('-').map(Number);
+  for(let i=0;i<n;i++){ out.push(y+'-'+String(m).padStart(2,'0')); m--; if(m===0){m=12;y--;} }
+  return out;
+}
+
 async function loadAll(){
   const since = new Date(Date.now() - 62*864e5).toISOString();
   const corSince = new Date(Date.now() - 95*864e5).toISOString();
@@ -1407,7 +1462,7 @@ async function loadAll(){
 
 const ADMIN = {
   user:null, selectedEmp:null, weekOffset:0, payMonth:null, _pay:null,
-  sheetEmp:null, sheetMonthOffset:0, notifCat:'all', notifSort:'desc', _allAlerts:[],
+  sheetEmp:null, sheetMonthOffset:0, notifCat:'all', notifSort:'desc', _allAlerts:[], logMonth:null,
 
   async enter(){
     const {data} = await sb.auth.getSession();
@@ -1610,22 +1665,22 @@ const ADMIN = {
 
     /* ----- payroll export ----- */
     const pm = this.payMonth || parisMonth(Date.now());
-    let opts='', [oy,om] = parisMonth(Date.now()).split('-').map(Number);
-    for(let i=0;i<6;i++){
-      const k=oy+'-'+String(om).padStart(2,'0');
-      opts += `<option value="${k}" ${k===pm?'selected':''}>Tháng ${om}/${oy} · ${k}</option>`;
-      om--; if(om===0){om=12;oy--;}
-    }
-    document.getElementById('payMonth').innerHTML = opts;
+    document.getElementById('payMonth').innerHTML =
+      historyMonths(13).map(k=>{ const [ky,km]=k.split('-');
+        return `<option value="${k}" ${k===pm?'selected':''}>Tháng ${+km}/${ky}</option>`; }).join('');
+    /* build this month's sessions from the right dataset (may be a historical fetch) */
+    const md = await monthData(pm);
+    const monthBuilt = buildSessions(md.events, md.corrections);
+    const paySessions = monthBuilt.sessions, payFlagsAll = monthBuilt.flags;
     const [py,pM]=pm.split('-').map(Number);
     const dim=new Date(Date.UTC(py,pM,0)).getUTCDate();
     const mdays=Array.from({length:dim},(_,i)=>pm+'-'+String(i+1).padStart(2,'0'));
-    const monthFlags=flags.filter(f=>(f.date?f.date.slice(0,7):parisMonth(f.ts))===pm);
+    const monthFlags=payFlagsAll.filter(f=>(f.date?f.date.slice(0,7):parisMonth(f.ts))===pm);
     const holSet = new Set(holidays.map(h=>h.date));
     const payRows=[];
     for(const e of active){
       const dayMap={};
-      sessions.filter(s=>s.empId===e.id && parisMonth(s.start)===pm)
+      paySessions.filter(s=>s.empId===e.id && parisMonth(s.start)===pm)
               .forEach(s=>{ const d=parisDay(s.start); dayMap[d]=(dayMap[d]||0)+sessMin(s); });
       const daysW=Object.keys(dayMap).length;
       const totalM=Object.values(dayMap).reduce((a,b)=>a+b,0);
@@ -1674,8 +1729,12 @@ const ADMIN = {
         }).join('')+'</div>' : '';
 
     /* ----- journal ----- */
-    const {evs:logEvs}=effectiveEvents();
-    const moLog=parisMonth(Date.now());
+    const moLog = this.logMonth || parisMonth(Date.now());
+    const lmSel=document.getElementById('logMonth');
+    if(lmSel) lmSel.innerHTML = historyMonths(13).map(k=>{ const [ky,km]=k.split('-');
+      return `<option value="${k}" ${k===moLog?'selected':''}>Tháng ${+km}/${ky}</option>`; }).join('');
+    const logMd = await monthData(moLog);
+    const {evs:logEvs} = effectiveEventsFrom(logMd.events, logMd.corrections);
     const lq=(this.logQuery||'').toLowerCase().trim();
     if(document.getElementById('logSearch') && document.getElementById('logSearch').value!==(this.logQuery||''))
       document.getElementById('logSearch').value=this.logQuery||'';
@@ -1801,7 +1860,7 @@ const ADMIN = {
     const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
-    a.download='lich-su-cham-cong-'+parisMonth(Date.now())+'.csv';
+    a.download='lich-su-cham-cong-'+(this.logMonth||parisMonth(Date.now()))+'.csv';
     document.body.appendChild(a); a.click(); a.remove();
   },
   setAuditQuery(v){ this.auditQuery=v; this.refresh(); },
@@ -2213,6 +2272,7 @@ const ADMIN = {
 
   /* --- export --- */
   setPayMonth(v){ this.payMonth=v; this.refresh(); },
+  setLogMonth(v){ this.logMonth=v; this.refresh(); },
   _csvRows(sep){
     const p=this._pay; if(!p) return '';
     const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
