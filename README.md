@@ -6,10 +6,14 @@ Time-clock and leave-management app for the nail salons. One static page, no bui
 
 - **`index.html`** — the whole app: door-tablet kiosk (`?kiosk=1&shop=N&key=UUID`), employee punch/leave flow, and the manager dashboard. Deploy it to any static host; bump the `BUILD` constant on every deploy so open tabs show the update banner.
 - **`db_1/`** — the Supabase side: numbered SQL files (run in order in the SQL Editor) plus the runbooks (`RUNBOOK-5.1.md`, `RUNBOOK-5.2.md`) that walk through setup and end-to-end testing.
+- **`supabase/migrations/`** — additive database upgrades applied after the original numbered setup. `owner_calendar_ledger` adds the owner-only individual-calendar editor without rewriting historical punches.
+- **`tests/`** — rollback-only database checks and an offline browser-logic check for the owner calendar.
 
 ## Security model (short version)
 
 Employees are anonymous clients: they can only execute the RPC functions in `04_functions.sql` (and the additive ones in 10/11/12/14), each of which validates its own inputs. Managers sign in with Supabase Auth and get row-level-security access gated by the `managers` table. Punches and corrections are append-only — enforced by triggers in `01_schema.sql`.
+
+The owner can click any date in an employee's individual calendar to replace its work periods, clear the day, or record weekly/PTO leave (including half days). Each save appends an immutable before/after entry to the corrections ledger. Existing managers keep their original correction tools; the calendar replacement API checks the `owner` role again inside the database.
 
 The `SUPABASE_URL` and anon key in `index.html` are public by design. Never put the `service_role` key anywhere in this repo.
 

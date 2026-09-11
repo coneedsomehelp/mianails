@@ -278,6 +278,32 @@
   @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
   }
+
+  .cal-editable{cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%;border-radius:10px}
+  .cal-editable:hover{box-shadow:inset 0 0 0 2px var(--accent)}
+  .cal-editable:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .day-dialog{margin:auto;border:1px solid var(--line);border-radius:20px;padding:0;width:min(600px,calc(100vw - 24px));max-height:90dvh;color:var(--ink);background:var(--card);box-shadow:var(--sh-lg)}
+  .day-dialog::backdrop{background:rgba(15,23,42,.5)}
+  .day-editor{display:flex;flex-direction:column;max-height:90dvh}
+  .day-editor-fields{border:0;padding:0;min-width:0;min-height:0;overflow:auto}
+  .day-scroll{padding:0 20px 12px}
+  .day-editor header{padding:20px 20px 0}
+  .day-cleared{background:var(--muted);color:var(--ink-soft)}
+  .day-editor header{display:flex;justify-content:space-between;gap:12px;align-items:start;margin-bottom:18px}
+  .day-editor h2{margin:4px 0;font-size:22px}
+  .day-editor label{display:block;font-size:13px;font-weight:600}
+  .day-editor select,.day-editor input,.day-editor textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px;width:100%;box-sizing:border-box;margin-top:5px}
+  .day-editor textarea{resize:vertical}
+  .day-session{border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0}
+  .day-session-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:13px}
+  .day-time-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .day-hint{font-size:12px;color:var(--ink-soft);margin:8px 0 12px}
+  .day-warning{padding:12px;background:var(--amber-soft);border-radius:10px;font-size:13px;margin:12px 0}
+  .day-footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--line);background:var(--card);flex-wrap:wrap;flex-shrink:0}
+  .day-clear-btn{margin-right:auto;color:var(--rose);border:1px solid var(--rose)}
+  .day-total{font-weight:700;font-size:16px;margin:14px 0}
+  .day-preview{font-size:12px;padding:8px 12px;background:var(--muted);border-radius:8px;margin-bottom:16px}
+  @media(max-width:440px){.day-scroll{padding:0 14px 12px}.day-footer{padding:12px 14px}.day-editor h2{font-size:19px}}
 </style>
 </head>
 <body>
@@ -529,8 +555,10 @@
             <select id="sheetEmp" class="num-input" style="width:auto;text-align:left;flex:1;min-width:180px" onchange="ADMIN.setSheetEmp(this.value)"></select>
             <button id="sheetPrev" onclick="ADMIN.shiftSheetMonth(-1)">‹</button>
             <b id="sheetMonthLbl"></b>
+            <input type="month" id="sheetMonthPicker" aria-label="Chọn tháng · Choisir le mois" onchange="ADMIN.setSheetMonth(this.value)" style="max-width:170px">
             <button id="sheetNext" onclick="ADMIN.shiftSheetMonth(1)">›</button>
           </div>
+          <p id="ownerCalendarStatus" class="day-hint" role="status"></p>
           <div class="stat-row" id="sheetSummary"></div>
           <div id="sheetCal"></div>
           <div id="sheetLegend" style="margin-top:12px"></div>
@@ -608,6 +636,43 @@
   </section>
   <p class="center muted" style="font-size:11px;margin-top:28px" id="buildTag"></p>
 </main>
+<dialog id="ownerDayDialog" class="day-dialog" aria-labelledby="ownerDayTitle" oncancel="event.preventDefault();ADMIN.closeDayEditor()">
+  <div class="day-editor">
+    <header><div><div class="muted" id="ownerDayEmployee"></div><h2 id="ownerDayTitle"></h2><div class="day-hint">Chỉnh ngày công · Modifier la journée</div></div>
+      <button class="btn btn-ghost btn-sm" aria-label="Đóng · Fermer" onclick="ADMIN.closeDayEditor()">✕</button></header>
+    <fieldset id="ownerDayFields" class="day-editor-fields"><div class="day-scroll">
+    <label>Loại ngày · Type de journée
+      <select id="ownerDayType" onchange="ADMIN.setDayEditorType(this.value)">
+        <option value="work">Đi làm · Travail</option>
+        <option value="clear">Xóa dữ liệu ngày · Effacer la journée</option>
+        <option value="dayoff">Nghỉ tuần · Repos hebdomadaire</option>
+        <option value="pto">Nghỉ phép cả ngày · Congé journée entière</option>
+        <option value="am">Nghỉ phép buổi sáng · Congé le matin</option>
+        <option value="pm">Nghỉ phép buổi chiều · Congé l’après-midi</option>
+      </select>
+    </label>
+    <div id="ownerDayWarning" class="day-warning" hidden></div>
+    <div id="ownerDayWork">
+      <p class="day-hint">Giờ Paris. 00:00 ở ô chưa có dữ liệu là giờ trống. · Heure de Paris. 00:00 indique une heure manquante.</p>
+      <div id="ownerDaySessions"></div>
+      <button class="btn btn-ghost btn-sm" onclick="ADMIN.addDayEditorSession()">＋ Thêm lượt làm · Ajouter une plage</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--rose)" onclick="ADMIN.clearDayEditorSessions()">Xóa tất cả giờ · Effacer les heures</button>
+      <div id="ownerDayTotal" class="day-total" aria-live="polite"></div>
+    </div>
+    <label style="margin-top:16px">Ghi chú (không bắt buộc) · Note facultative
+      <textarea id="ownerDayNote" maxlength="2000" rows="2" oninput="ADMIN._dayDraft.note=this.value;ADMIN.dayEditorChanged()" placeholder=""></textarea>
+    </label>
+    <p class="day-hint">Bản gốc vẫn được giữ trong lịch sử khi điều chỉnh hoặc xóa giờ. · Les heures d’origine restent dans l’historique.</p>
+    <p id="ownerDayError" class="errline" role="alert"></p>
+    <div id="ownerDayReview" class="day-warning" hidden aria-live="polite"></div>
+    </div></fieldset>
+    <div class="day-footer">
+      <button id="ownerDayClear" class="btn btn-ghost btn-sm day-clear-btn" onclick="ADMIN.clearOwnerDay()">Xóa ngày · Effacer le jour</button>
+      <button class="btn btn-ghost btn-sm" onclick="ADMIN.closeDayEditor()">Đóng · Fermer</button>
+      <button id="ownerDaySave" class="btn btn-ink btn-sm" onclick="ADMIN.submitDayEditor()">Xem & lưu · Vérifier</button>
+    </div>
+  </div>
+</dialog>
 
 <script>
 /* =====================================================
@@ -620,7 +685,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.09.02-04';   // bump on every deploy — powers the update banner
+const BUILD='v2026.09.11-01';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -1070,7 +1135,7 @@ function effectiveEventsFrom(evSrc, corrSrc){
   const evs = evSrc
     .filter(e=>!voids.has(e.id))
     .map(e=> edits[e.id] ? {...e, ts:edits[e.id].newTs, corrected:true} : {...e})
-    .sort((a,b)=>a.ts-b.ts);
+    .sort((a,b)=>a.ts-b.ts || (a.type===b.type?String(a.id).localeCompare(String(b.id)):a.type==='out'?-1:1));
   return {evs, addOuts, addIns, acks};
 }
 function effectiveEvents(){
@@ -1085,7 +1150,7 @@ function effectiveEvents(){
   const evs = events
     .filter(e=>!voids.has(e.id))
     .map(e=> edits[e.id] ? {...e, ts:edits[e.id].newTs, corrected:true} : {...e})
-    .sort((a,b)=>a.ts-b.ts);
+    .sort((a,b)=>a.ts-b.ts || (a.type===b.type?String(a.id).localeCompare(String(b.id)):a.type==='out'?-1:1));
   return {evs, addOuts, addIns, acks};
 }
 function buildSessions(srcEvents, srcCorr){
@@ -1097,7 +1162,7 @@ function buildSessions(srcEvents, srcCorr){
   const sessions=[], flags=[];
   const today = parisDay(Date.now());
   for(const [empId, list] of Object.entries(byEmp)){
-    list.sort((a,b)=>a.ts-b.ts);   // pairing REQUIRES chronological order — never trust fetch order or edited times
+    list.sort((a,b)=>a.ts-b.ts || (a.type===b.type?String(a.id).localeCompare(String(b.id)):a.type==='out'?-1:1));   // pairing REQUIRES chronological order — never trust fetch order or edited times
     let open=null;
     /* A DAY IS SEALED AT MIDNIGHT (config auto_close, credit 0 min).
        An unclosed check-in is resolved on its OWN day — manager add-out fix if one
@@ -1391,7 +1456,7 @@ async function fetchAll(builder, order, opts){
   return all;
 }
 
-/* Daily screens (Hôm nay, calendar, alerts) run off the fast 62-day window.
+/* Daily screens (Hôm nay and alerts) run off the fast 62-day window.
    Tháng & Lương and the log tab can look back further: monthData() serves the
    selected month from the already-loaded globals when it falls inside the
    window, and otherwise fetches just that month once and caches it. This keeps
@@ -1400,14 +1465,15 @@ const LOADED_WINDOW_DAYS = 62;
 const _monthCache = {};   // 'YYYY-MM' -> {events, corrections}
 function monthInGlobals(pm){
   const floor = parisDay(Date.now() - LOADED_WINDOW_DAYS*864e5);
-  return pm >= floor.slice(0,7);
+  return pm+'-01' >= floor;
 }
-async function monthData(pm){
-  if(monthInGlobals(pm)) return {events, corrections};      // already in memory
+async function monthData(pm, fullMonth=false){
+  if(!fullMonth && monthInGlobals(pm)) return {events, corrections};      // already in memory
   if(_monthCache[pm]) return _monthCache[pm];               // fetched earlier this session
-  const start = pm+'-01T00:00:00Z';
+  const start = new Date(parisToTs(pm+'-01','00:00')).toISOString();
   const [y,m] = pm.split('-').map(Number);
-  const end = (m===12? (y+1)+'-01' : y+'-'+String(m+1).padStart(2,'0'))+'-01T00:00:00Z';
+  const nextMonth = m===12? (y+1)+'-01' : y+'-'+String(m+1).padStart(2,'0');
+  const end = new Date(parisToTs(nextMonth+'-01','00:00')).toISOString();
   // punches by ts; corrections span a wider net so an add-out logged later still applies
   const [pRows, cRows] = await Promise.all([
     fetchAll(()=>sb.from('punches').select('*').gte('ts', start).lt('ts', end), 'ts', {ascending:true}),
@@ -1416,7 +1482,7 @@ async function monthData(pm){
   const ev = (pRows||[]).map(p=>({ id:p.id, empId:String(p.employee_id), shop:p.shop_id,
     type:p.type, ts:Date.parse(p.ts), device:p.device_uuid, ip:p.ip }));
   const cr = (cRows||[]).map(c=>({ id:c.id, kind:c.kind, eventId:c.punch_id,
-    syntheticRef:c.synthetic_ref, empId:String(c.employee_id),
+    syntheticRef:c.synthetic_ref, empId:String(c.employee_id), dayDate:c.day_date, details:c.details,
     oldTs:c.old_ts?Date.parse(c.old_ts):null, newTs:c.new_ts?Date.parse(c.new_ts):null,
     note:c.note, by:mgrNames[c.manager_id]||'Quản lý', at:Date.parse(c.created_at) }));
   return (_monthCache[pm] = {events:ev, corrections:cr});
@@ -1429,6 +1495,7 @@ function historyMonths(n){
 }
 
 async function loadAll(){
+  for(const month of Object.keys(_monthCache)) delete _monthCache[month];
   const since = new Date(Date.now() - 62*864e5).toISOString();
   const corSince = new Date(Date.now() - 95*864e5).toISOString();
   const [emps, pns, cors, lvs, mgrs, hol, shp] = await Promise.all([
@@ -1449,7 +1516,7 @@ async function loadAll(){
   events = (pns||[]).map(p=>({ id:p.id, empId:String(p.employee_id), shop:p.shop_id,
     type:p.type, ts:Date.parse(p.ts), device:p.device_uuid, ip:p.ip }));
   corrections = (cors||[]).map(c=>({ id:c.id, kind:c.kind, eventId:c.punch_id,
-    syntheticRef:c.synthetic_ref, empId:String(c.employee_id),
+    syntheticRef:c.synthetic_ref, empId:String(c.employee_id), dayDate:c.day_date, details:c.details,
     oldTs:c.old_ts?Date.parse(c.old_ts):null, newTs:c.new_ts?Date.parse(c.new_ts):null,
     note:c.note, by:mgrNames[c.manager_id]||'Quản lý', at:Date.parse(c.created_at) }))
     .sort((a,b)=>a.at-b.at);
@@ -1458,6 +1525,45 @@ async function loadAll(){
     note:l.note, status:l.status, at:Date.parse(l.requested_at),
     decisionNote:l.decision_note,
     decidedAt:l.decided_at?Date.parse(l.decided_at):null, by:l.decided_by?(mgrNames[l.decided_by]||'Quản lý'):null }));
+}
+
+function calendarDraftFromSnapshot(snapshot,empId,date){
+  const ev=(snapshot?.punches||[]).map(p=>({id:p.id,empId:p.employee_id,shop:p.shop_id,type:p.type,ts:Date.parse(p.ts)}));
+  const cr=(snapshot?.corrections||[]).map(c=>({id:c.id,kind:c.kind,eventId:c.punch_id,newTs:c.new_ts?Date.parse(c.new_ts):null,syntheticRef:c.synthetic_ref}));
+  const built=buildSessions(ev,cr);
+  const rows=built.sessions.filter(x=>x.empId===empId&&parisDay(x.start)===date)
+    .map(x=>({in:parisTime(x.start),out:x.end===null?null:parisTime(x.end),shop:String(x.shop)}));
+  built.flags.filter(x=>x.empId===empId&&x.ts&&parisDay(x.ts)===date).forEach(x=>{
+    if(x.kind==='missing-in') rows.push({in:null,out:parisTime(x.ts),shop:String(x.shop)});
+    if(x.kind==='missing-out') rows.push({in:parisTime(x.ts),out:null,shop:String(x.shop)});
+  });
+  rows.sort((a,b)=>(a.in||a.out||'').localeCompare(b.in||b.out||''));
+  const leaves=(snapshot?.leave||[]).filter(l=>l.employee_id===empId);
+  const pto=leaves.filter(l=>l.type==='pto'&&l.status==='approved'&&l.start_date<=date&&l.end_date>=date);
+  const fraction=pto.reduce((n,l)=>n+(l.half?0.5:1),0);
+  const off=leaves.some(l=>l.type==='dayoff'&&l.date===date);
+  const lastDay=(snapshot?.corrections||[]).filter(c=>c.kind==='day-edit'&&c.day_date===date).at(-1);
+  const type=fraction>=1?'pto':fraction>0?pto.find(l=>l.half).half:off?'dayoff':!rows.length&&lastDay?.day_type==='clear'?'clear':'work';
+  return {rows,type,hadWork:rows.length>0,hadLeave:off||pto.length>0||leaves.some(l=>l.status==='pending')};
+}
+function calendarSnapshotLabel(snapshot,empId,date){
+  if(!snapshot) return '—';
+  const d=calendarDraftFromSnapshot(snapshot,empId,date);
+  const labels={dayoff:'Nghỉ tuần · Repos',pto:'Phép 1 ngày · Congé 1 jour',am:'Phép ½ sáng · Congé ½ matin',pm:'Phép ½ chiều · Congé ½ après-midi'};
+  return [d.rows.map(r=>`${r.in||'…'}–${r.out||'…'} (T${r.shop})`).join('; '),labels[d.type]].filter(Boolean).join(' · ')||'Không giờ / nghỉ · Aucune heure ni congé';
+}
+function calendarError(error){
+  const message=error?.message||String(error);
+  if(message.includes('owner_only')||error?.code==='42501') return 'Chỉ chủ tiệm được điều chỉnh ngày công. · Réservé au propriétaire.';
+  if(message.includes('day_changed')) return 'Ngày này vừa thay đổi. Đóng rồi mở lại ngày để xem dữ liệu mới trước khi lưu. · Journée modifiée. Fermez puis rouvrez-la.';
+  if(message.includes('overlapping_sessions')) return 'Các lượt làm bị trùng giờ. · Les plages se chevauchent.';
+  if(message.includes('invalid_dst_time')) return 'Giờ không tồn tại do đổi giờ mùa hè. · Heure inexistante au changement d’heure.';
+  if(message.includes('checkout_before_checkin')) return 'Giờ ra phải sau giờ vào. · La sortie doit suivre l’entrée.';
+  if(message.includes('invalid_session')||message.includes('too_many_sessions')) return 'Kiểm tra giờ vào / ra (tối đa 24 lượt). · Vérifiez les heures, 24 plages maximum.';
+  if(message.includes('note_too_long')) return 'Ghi chú tối đa 2.000 ký tự. · Note limitée à 2 000 caractères.';
+  if(message.includes('invalid_shop')) return 'Tiệm không còn hợp lệ. Đóng rồi mở lại ngày. · Salon non valide, rouvrez la journée.';
+  if(error?.code==='PGRST202'||message.includes('Could not find the function')) return 'Chức năng chưa được bật trên máy chủ. · Fonction non disponible sur le serveur.';
+  return 'Không lưu / tải được. Kiểm tra kết nối rồi thử lại. · Échec de connexion, réessayez.';
 }
 
 const ADMIN = {
@@ -1661,7 +1767,7 @@ const ADMIN = {
     }).join('')+'</tr>';
     document.getElementById('tblRoster').innerHTML = rrows;
 
-    this.renderSheet(sessions, flags);
+    await this.renderSheet();
 
     /* ----- payroll export ----- */
     const pm = this.payMonth || parisMonth(Date.now());
@@ -1798,9 +1904,10 @@ const ADMIN = {
           : c.syntheticRef.startsWith('devnew-')   ? 'Xác nhận điện thoại mới hợp lệ'
           : 'Xác nhận';
         if(c.kind==='edit')    what=`Sửa giờ ${ev&&ev.type==='in'?'VÀO':'RA'}: ${parisTime(c.oldTs)} → <b>${parisTime(c.newTs)}</b> (${parisDay(c.newTs)})`;
+        if(c.kind==='day-edit') what=`${c.details?.request?.type==='clear'?'Xóa dữ liệu ngày · Journée effacée':'Chỉnh ngày công · Journée modifiée'} <b>${esc(c.dayDate)}</b><br><span class="muted">Trước · Avant: ${esc(calendarSnapshotLabel(c.details?.before,c.empId,c.dayDate))}<br>Sau · Après: ${esc(calendarSnapshotLabel(c.details?.after,c.empId,c.dayDate))}</span>`;
         if(c.kind==='void')    what=`Hủy lượt chấm lúc ${c.oldTs?parisTime(c.oldTs):''} ${c.oldTs?'('+parisDay(c.oldTs)+')':''}`;
-        return `<div class="audit-item"><b>${nm}</b> — ${what}${c.note?`<br><span class="muted">«${esc(c.note)}»</span>`:''}
-          <br><span class="muted" style="font-size:12.5px">bởi ${c.by} · ${parisDay(c.at)} ${parisTime(c.at)} · bản gốc được giữ nguyên</span></div>`;
+        return `<div class="audit-item"><b>${esc(nm)}</b> — ${what}${c.note?`<br><span class="muted">«${esc(c.note)}»</span>`:''}
+          <br><span class="muted" style="font-size:12.5px">bởi ${esc(c.by)} · ${parisDay(c.at)} ${parisTime(c.at)} · bản gốc được giữ nguyên</span></div>`;
       }).join('');
     }
 
@@ -1812,7 +1919,7 @@ const ADMIN = {
 
   dayDetailHtml(e, vd){
     const {evs}=effectiveEvents();
-    const mine=evs.filter(x=>x.empId===e.id && parisDay(x.ts)===vd).sort((a,b)=>a.ts-b.ts);
+    const mine=evs.filter(x=>x.empId===e.id && parisDay(x.ts)===vd).sort((a,b)=>a.ts-b.ts || (a.type===b.type?String(a.id).localeCompare(String(b.id)):a.type==='out'?-1:1));
     let h = `<b style="font-size:13.5px">Lượt chấm ${fmtD(vd)} — ${e.name}</b>`;
     if(mine.length===0) h += '<p class="muted" style="font-size:13px;margin-top:6px">Không có lượt chấm ngày này.</p>';
     mine.forEach(ev=>{
@@ -1944,15 +2051,21 @@ const ADMIN = {
 
   /* --- personal monthly timesheet: one person, every day --- */
   setSheetEmp(v){ this.sheetEmp=v; this.refresh(); },
-  shiftSheetMonth(n){ this.sheetMonthOffset=Math.min(0, Math.max(-2, (this.sheetMonthOffset||0)+n)); this.refresh(); },
+  shiftSheetMonth(n){ this.sheetMonthOffset=(this.sheetMonthOffset||0)+n; this.renderSheet(); },
+  setSheetMonth(v){
+    if(!/^\d{4}-\d{2}$/.test(v) || +v.slice(0,4)<1900 || +v.slice(0,4)>9998) return;
+    const [y,m]=v.split('-').map(Number), [cy,cm]=parisMonth(Date.now()).split('-').map(Number);
+    this.sheetMonthOffset=(y-cy)*12+m-cm; this.renderSheet();
+  },
   goSheet(id){
     this.sheetEmp=id; this.sheetMonthOffset=0;
     const b=document.querySelector('.admin-side button[data-atab="sheet"]');
     if(b) b.click();
   },
-  renderSheet(sessions, flags){
+  async renderSheet(){
+    const requestId=this._sheetRequest=(this._sheetRequest||0)+1;
     const sel=document.getElementById('sheetEmp'); if(!sel) return;
-    const act=employees.filter(e=>e.active).sort((a,b)=>a.name.localeCompare(b.name,'vi'));
+    const act=employees.filter(e=>e.active||this.isOwner()).sort((a,b)=>a.name.localeCompare(b.name,'vi'));
     if(!act.length){ document.getElementById('sheetCal').innerHTML='<p class="muted">Chưa có nhân viên.</p>'; return; }
     if(!this.sheetEmp || !act.some(e=>e.id===this.sheetEmp)) this.sheetEmp=act[0].id;
     sel.innerHTML=act.map(e=>`<option value="${e.id}" ${e.id===this.sheetEmp?'selected':''}>${esc(e.name)}</option>`).join('');
@@ -1964,12 +2077,22 @@ const ADMIN = {
     while(mm<1){ mm+=12; my--; } while(mm>12){ mm-=12; my++; }
     const mk=my+'-'+String(mm).padStart(2,'0');
     document.getElementById('sheetMonthLbl').textContent=`Tháng ${mm}/${my}`;
-    document.getElementById('sheetPrev').disabled=(this.sheetMonthOffset||0)<=-2;
-    document.getElementById('sheetNext').disabled=(this.sheetMonthOffset||0)>=0;
+    document.getElementById('sheetPrev').disabled=my<=1900&&mm===1;
+    document.getElementById('sheetNext').disabled=my>=9998&&mm===12;
+    document.getElementById('sheetMonthPicker').value=mk;
+    document.getElementById('sheetCal').innerHTML='<p class="muted">Đang tải · Chargement…</p>';
+    document.getElementById('sheetSummary').innerHTML='';
+    let md;
+    try{ md=await monthData(mk,true); }
+    catch(e){
+      if(requestId===this._sheetRequest) document.getElementById('sheetCal').innerHTML='<p class="errline">Không tải được tháng này. Vui lòng thử lại. · Chargement impossible, réessayez.</p>';
+      return;
+    }
+    if(requestId!==this._sheetRequest) return;
+    const built=buildSessions(md.events,md.corrections), sessions=built.sessions, flags=built.flags;
+    this._sheetData={empId:emp.id,month:mk,events:md.events,corrections:md.corrections,sessions,flags};
 
     const dim=new Date(Date.UTC(my,mm,0)).getUTCDate();
-    const firstTs=events.filter(ev=>ev.empId===emp.id).reduce((a,ev)=>Math.min(a,ev.ts), Infinity);
-    const firstDay=firstTs===Infinity?null:parisDay(firstTs);
     const holSet=new Set(holidays.map(h=>h.date));
 
     const days=[];
@@ -1983,20 +2106,20 @@ const ADMIN = {
       const rostered=leave.some(l=>l.type==='dayoff'&&l.empId===emp.id&&weekMonday(l.date)===weekMonday(d));
       let st;
       if(d>today) st='future';
-      else if(firstDay&&d<firstDay) st='none';
       else if(live) st='live';
       else if(needsFix) st='fix';
       else if(mins>0) st=(req>0&&Math.round(mins)<req)?'short':'done';
       else if(ptoOn(emp.id,d)) st='pto';
       else if(dayoffOn(emp.id,d)) st='off';
+      else if([...md.corrections].reverse().find(c=>c.empId===emp.id&&c.dayDate===d&&c.kind==='day-edit')?.details?.request?.type==='clear') st='cleared';
       else st=rostered?'abs':'none';
       days.push({d:d,i:i,ds:ds,mins:mins,st:st, sun:new Date(d+'T12:00:00Z').getUTCDay()===0, hol:holSet.has(d),
                  ptoF:ptoFrac(emp.id,d), ptoM:ptoMark(emp.id,d),
-                 corrected:ds.some(x=>x.corrected), shopsUsed:[...new Set(ds.map(x=>x.shop))]});
+                 corrected:ds.some(x=>x.corrected)||md.corrections.some(c=>c.empId===emp.id&&c.dayDate===d&&c.kind==='day-edit'), shopsUsed:[...new Set(ds.map(x=>x.shop))]});
     }
 
-    const LBL={done:'Đủ công',short:'Thiếu giờ',fix:'Cần sửa',pto:'Nghỉ phép',off:'Nghỉ tuần',abs:'Vắng',live:'Đang làm',none:'',future:''};
-    const GLY={done:'✓',short:'!',fix:'⚠',pto:'P',off:'–',abs:'✗',live:'●',none:'',future:''};
+    const LBL={done:'Đủ công',short:'Thiếu giờ',fix:'Cần sửa',pto:'Nghỉ phép',off:'Nghỉ tuần',abs:'Vắng',live:'Đang làm',cleared:'Đã xóa',none:'',future:''};
+    const GLY={done:'✓',short:'!',fix:'⚠',pto:'P',off:'–',abs:'✗',live:'●',cleared:'⊘',none:'',future:''};
     const lead=(new Date(mk+'-01T00:00:00Z').getUTCDay()+6)%7;
     let cal='<div class="cal">'+['T2','T3','T4','T5','T6','T7','CN'].map(w=>`<div class="cal-h">${w}</div>`).join('');
     for(let i=0;i<lead;i++) cal+='<div class="cal-c cal-empty"></div>';
@@ -2006,13 +2129,14 @@ const ADMIN = {
       const marks=[ (x.ptoF>0&&x.ptoF<1&&x.mins>0)?'Phép'+x.ptoM:'',
                     x.ds.length>1?x.ds.length+' lượt':'', x.corrected?'✏️':'',
                     (shops.length>1&&x.shopsUsed.length)?x.shopsUsed.map(v=>'T'+v).join('/'):'' ].filter(Boolean).join(' · ');
-      cal+=`<div class="cal-c st-${x.st}">
+      const editable=this.isOwner();
+      cal+=`<${editable?'button type="button"':'div'} class="cal-c st-${x.st}${editable?' cal-editable':''}"${editable?` aria-label="${esc(emp.name)} · ${x.d} · Chỉnh ngày công" onclick="ADMIN.openDayEditor('${emp.id}','${x.d}')"`:''}>
         <div><span class="d"${x.sun||x.hol?' style="color:var(--accent)"':''}>${x.i}</span>${x.hol?' <span class="cal-t">Lễ</span>':x.sun?' <span class="cal-t">CN</span>':''}</div>
         ${x.mins>0?`<div class="h">${fmtMin(x.mins)}</div>`:''}
         ${range?`<div class="cal-r">${range}</div>`:''}
         ${LBL[x.st]?`<div class="cal-s">${GLY[x.st]} ${LBL[x.st]}${x.st==='pto'?x.ptoM:''}</div>`:''}
         ${marks?`<div class="cal-m">${marks}</div>`:''}
-      </div>`;
+      </${editable?'button':'div'}>`;
     }
     document.getElementById('sheetCal').innerHTML=cal+'</div>';
 
@@ -2026,7 +2150,178 @@ const ADMIN = {
       <div class="stat"><b>${(()=>{const n=days.reduce((a,x)=>a+(x.d<=today?x.ptoF:0),0); return n%1?n.toFixed(1):n;})()}</b><span>Nghỉ phép · Congés</span></div>
       <div class="stat"><b>${cnt('abs')}</b><span>Vắng · Absences</span></div>`;
     document.getElementById('sheetLegend').innerHTML=
-      ['done','short','fix','pto','off','abs','live'].map(k=>`<span class="lg st-${k}">${GLY[k]} ${LBL[k]}</span>`).join('');
+      ['done','short','fix','pto','off','abs','live','cleared'].map(k=>`<span class="lg st-${k}">${GLY[k]} ${LBL[k]}</span>`).join('');
+  },
+
+  /* Owner calendar: fetch a fresh version before editing; save one atomic action. */
+  isOwner(){ return !!this.user && managersList.some(m=>m.user_id===this.user.id&&m.role==='owner'); },
+  async openDayEditor(empId,date){
+    if(!this.isOwner()||this._daySaving) return;
+    const requestId=this._dayOpening=(this._dayOpening||0)+1;
+    const status=document.getElementById('ownerCalendarStatus');
+    status.textContent='Đang tải ngày công · Chargement de la journée…';
+    try{
+      const {data,error}=await sb.rpc('owner_calendar_get',{p_employee:empId,p_date:date});
+      if(requestId!==this._dayOpening||!this.isOwner()) return;
+      if(error) throw error;
+      if(!data?.ok||!data.version||!data.snapshot) throw new Error('invalid_response');
+      const emp=employees.find(e=>e.id===empId); if(!emp) return;
+      const original=calendarDraftFromSnapshot(data.snapshot,empId,date);
+      this._dayDraft={...original,empId,date,note:'',dirty:false,version:data.version,reviewed:false,pendingRequest:null};
+      document.getElementById('ownerDayEmployee').textContent=emp.name;
+      document.getElementById('ownerDayTitle').textContent=new Intl.DateTimeFormat('vi-VN',{weekday:'long',day:'numeric',month:'numeric',year:'numeric',timeZone:'Europe/Paris'}).format(new Date(date+'T12:00:00Z'));
+      document.getElementById('ownerDayType').value=original.type;
+      document.getElementById('ownerDayNote').value='';
+      document.getElementById('ownerDayError').textContent='';
+      document.getElementById('ownerDayReview').hidden=true;
+      status.textContent=''; this.renderDayEditor();
+      document.getElementById('ownerDayDialog').showModal();
+    }catch(e){ if(requestId===this._dayOpening) status.textContent=calendarError(e); }
+  },
+  dayEditorChanged(){
+    if(!this._dayDraft) return;
+    this._dayDraft.dirty=true; this._dayDraft.reviewed=false;
+    document.getElementById('ownerDaySave').textContent='Xem & lưu · Vérifier';
+    document.getElementById('ownerDaySave').disabled=false;
+    document.getElementById('ownerDayReview').hidden=true;
+  },
+  clearOwnerDay(){
+    if(!this._dayDraft||this._daySaving) return;
+    this._dayDraft.type='clear'; this.dayEditorChanged();
+    document.getElementById('ownerDayType').value='clear'; this.renderDayEditor();
+    this.reviewDayEditor();
+  },
+  closeDayEditor(){
+    if(this._daySaving) return;
+    if(this._dayDraft?.dirty && !confirm('Bỏ các thay đổi chưa lưu? · Abandonner les modifications ?')) return;
+    document.getElementById('ownerDayDialog').close(); this._dayDraft=null;
+  },
+  setDayEditorType(type){
+    if(!this._dayDraft) return;
+    this._dayDraft.type=type; this.dayEditorChanged(); this.renderDayEditor();
+  },
+  addDayEditorSession(){
+    const d=this._dayDraft; if(!d) return;
+    d.rows.push({in:null,out:null,shop:d.rows.at(-1)?.shop||String(shops[0]?.id||'')});
+    this.dayEditorChanged(); this.renderDayEditor();
+  },
+  removeDayEditorSession(i){
+    const d=this._dayDraft; if(!d) return;
+    d.rows.splice(i,1); this.dayEditorChanged(); this.renderDayEditor();
+  },
+  clearDayEditorSessions(){
+    const d=this._dayDraft; if(!d) return;
+    d.rows=[]; this.dayEditorChanged(); this.renderDayEditor();
+  },
+  updateDayEditorSession(i,key,value){
+    const d=this._dayDraft; if(!d) return;
+    if(!d.rows[i]) d.rows[i]={in:null,out:null,shop:String(shops[0]?.id||'')};
+    d.rows[i][key]=value||null; this.dayEditorChanged();
+    const hint=document.getElementById('ownerDayIncomplete-'+i);
+    if(hint) hint.hidden=d.rows[i].in!==null&&d.rows[i].out!==null;
+    document.getElementById('ownerDayReview').hidden=true;
+    document.getElementById('ownerDayError').textContent='';
+    this.renderDayEditorTotal();
+  },
+  renderDayEditor(){
+    const d=this._dayDraft; if(!d) return;
+    document.getElementById('ownerDaySave').disabled=!d.dirty||!!this._daySaving;
+    const fullLeave=['dayoff','pto','clear'].includes(d.type);
+    document.getElementById('ownerDayWork').hidden=fullLeave;
+    const warning=document.getElementById('ownerDayWarning');
+    warning.hidden=d.type!=='clear' && !(fullLeave&&d.hadWork) && !d.hadLeave;
+    warning.textContent=d.type==='clear'
+      ?'Xóa toàn bộ giờ làm và nghỉ tuần / phép của ngày này khỏi bảng công. Tổng giờ: 0. Lịch sử gốc vẫn được giữ. · Retirer les heures et congés de cette date. Historique conservé.'
+      :fullLeave&&d.hadWork
+      ?'Đổi sang nghỉ sẽ bỏ giờ làm của ngày này khỏi tổng công. Bản gốc vẫn được giữ. · Les heures seront retirées du total, avec conservation de l’historique.'
+      :d.hadLeave?'Chỉ điều chỉnh ngày đã chọn; các ngày nghỉ khác giữ nguyên. · Seule la date choisie sera modifiée.':'';
+    const rows=d.rows.length?d.rows:[{in:null,out:null,shop:String(shops[0]?.id||'')}];
+    document.getElementById('ownerDaySessions').innerHTML=rows.map((r,i)=>`
+      <div class="day-session"><div class="day-session-head"><b>Lượt ${i+1} · Plage ${i+1}</b>
+        <button class="btn btn-ghost btn-sm" onclick="ADMIN.removeDayEditorSession(${i})" aria-label="Xóa lượt ${i+1} · Supprimer la plage ${i+1}">Xóa · Supprimer</button></div>
+        <div class="day-time-grid">
+          <label>Giờ vào · Entrée<input type="time" value="${r.in||'00:00'}" aria-label="Giờ vào ${i+1}" onchange="ADMIN.updateDayEditorSession(${i},'in',this.value)"></label>
+          <label>Giờ ra · Sortie<input type="time" value="${r.out||'00:00'}" aria-label="Giờ ra ${i+1}" onchange="ADMIN.updateDayEditorSession(${i},'out',this.value)"></label>
+        </div>
+        <label style="margin-top:10px">Tiệm · Salon<select onchange="ADMIN.updateDayEditorSession(${i},'shop',this.value)">${shops.map(s=>`<option value="${s.id}" ${String(s.id)===r.shop?'selected':''}>${esc(s.name)}</option>`).join('')}</select></label>
+        <div class="day-hint" id="ownerDayIncomplete-${i}" ${r.in!==null&&r.out!==null?'hidden':''}>Chưa đủ giờ vào / ra · Heures incomplètes</div>
+      </div>`).join('');
+    document.getElementById('ownerDayReview').hidden=true;
+    document.getElementById('ownerDayError').textContent='';
+    this.renderDayEditorTotal();
+  },
+  dayEditorResult(){
+    const d=this._dayDraft;
+    if(!d) return {error:'Không có ngày được chọn.'};
+    if(['dayoff','pto','clear'].includes(d.type)) return {minutes:0,count:0};
+    const intervals=[];
+    for(const r of d.rows){
+      if(r.in===null&&r.out===null) continue;
+      if(!r.in||!r.out) return {error:'Nhập cả giờ vào và giờ ra, hoặc xóa lượt. · Complétez les deux heures ou supprimez la plage.'};
+      if(!r.shop) return {error:'Chọn tiệm. · Choisissez un salon.'};
+      const start=parisToTs(d.date,r.in), end=parisToTs(d.date,r.out);
+      if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start) return {error:'Giờ ra phải sau giờ vào trong cùng ngày. · La sortie doit suivre l’entrée le même jour.'};
+      if(parisTime(start)!==r.in||parisTime(end)!==r.out) return {error:'Giờ không tồn tại do đổi giờ mùa hè. · Heure inexistante au changement d’heure.'};
+      intervals.push({start,end});
+    }
+    intervals.sort((a,b)=>a.start-b.start);
+    if(intervals.some((r,i)=>i>0&&r.start<intervals[i-1].end)) return {error:'Các lượt làm bị trùng giờ. · Les plages se chevauchent.'};
+    return {minutes:intervals.reduce((n,r)=>n+(r.end-r.start)/60000,0),count:intervals.length};
+  },
+  renderDayEditorTotal(){
+    const result=this.dayEditorResult();
+    document.getElementById('ownerDayTotal').textContent=result.error?'Chưa đủ giờ hợp lệ · Heures à compléter':`Tổng giờ dự kiến · Total prévu: ${fmtMin(result.minutes)}`;
+  },
+  reviewDayEditor(){
+    if(!this.isOwner()) return;
+    const result=this.dayEditorResult();
+    document.getElementById('ownerDayError').textContent=result.error||'';
+    if(result.error) return;
+    const d=this._dayDraft, review=document.getElementById('ownerDayReview'); review.hidden=false;
+    const labels={work:'Đi làm · Travail',dayoff:'Nghỉ tuần · Repos',pto:'Nghỉ phép 1 ngày · Congé 1 jour',am:'Nghỉ phép ½ ngày sáng · Congé ½ journée matin',pm:'Nghỉ phép ½ ngày chiều · Congé ½ journée après-midi',clear:'Xóa ngày: không giờ làm, không nghỉ tuần / phép · Effacer heures et congés'};
+    review.textContent=`${labels[d.type]} · ${result.count} lượt · ${fmtMin(result.minutes)}. ${d.date>=parisDay(Date.now())&&result.count?'Kiểm tra kỹ giờ hôm nay / tương lai. · Vérifiez les heures du jour ou futures.':''}`;
+    d.reviewed=true;
+    document.getElementById('ownerDaySave').textContent=d.type==='clear'?'Xác nhận xóa · Confirmer':'Lưu thay đổi · Enregistrer';
+    review.scrollIntoView({block:'nearest',behavior:'smooth'});
+  },
+  async submitDayEditor(){
+    if(!this.isOwner()||!this._dayDraft||!this._dayDraft.dirty||this._daySaving) return;
+    if(!this._dayDraft.reviewed){ this.reviewDayEditor(); return; }
+    const d=this._dayDraft,result=this.dayEditorResult();
+    if(result.error){ document.getElementById('ownerDayError').textContent=result.error; return; }
+    const sessions=['clear','pto','dayoff'].includes(d.type)?[]:d.rows.filter(r=>r.in!==null||r.out!==null)
+      .map(r=>({in:r.in,out:r.out,shop:Number(r.shop)}));
+    const payload={p_employee:d.empId,p_date:d.date,p_version:d.version,p_type:d.type,p_sessions:sessions,p_note:d.note.trim()||null};
+    const signature=JSON.stringify(payload);
+    if(!d.pendingRequest||d.pendingRequest.signature!==signature) d.pendingRequest={signature,id:crypto.randomUUID()};
+    payload.p_request_id=d.pendingRequest.id;
+    this._daySaving=true;
+    document.getElementById('ownerDayFields').disabled=true;
+    document.getElementById('ownerDaySave').disabled=true;
+    document.getElementById('ownerDayClear').disabled=true;
+    document.getElementById('ownerDaySave').textContent='Đang lưu · Enregistrement…';
+    let saved=false;
+    try{
+      const {data,error}=await sb.rpc('owner_calendar_save',payload);
+      if(error) throw error;
+      if(!data?.ok) throw new Error('invalid_response');
+      saved=true; d.dirty=false;
+      document.getElementById('ownerDayDialog').close(); this._dayDraft=null;
+      for(const key of Object.keys(_monthCache)) delete _monthCache[key];
+      await this.refresh();
+      document.getElementById('ownerCalendarStatus').textContent=d.type==='clear'
+        ?'Đã xóa dữ liệu ngày. Lịch sử được giữ nguyên. · Journée effacée, historique conservé.'
+        :'Đã lưu và ghi vào lịch sử. · Modifications enregistrées dans l’historique.';
+    }catch(e){
+      if(saved) document.getElementById('ownerCalendarStatus').textContent='Đã lưu. Chưa tải lại được bảng công — tải lại trang. · Enregistré. Rechargez la page pour actualiser.';
+      else document.getElementById('ownerDayError').textContent=calendarError(e);
+    }finally{
+      this._daySaving=false;
+      document.getElementById('ownerDayFields').disabled=false;
+      document.getElementById('ownerDaySave').disabled=false;
+      document.getElementById('ownerDayClear').disabled=false;
+      document.getElementById('ownerDaySave').textContent=this._dayDraft?.type==='clear'?'Xác nhận xóa · Confirmer':'Lưu thay đổi · Enregistrer';
+    }
   },
 
   /* --- staff: search, sort, bulk add, kiosk links --- */
