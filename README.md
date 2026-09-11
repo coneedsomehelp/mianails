@@ -20,3 +20,7 @@ The `SUPABASE_URL` and anon key in `index.html` are public by design. Never put 
 ## Policy constants
 
 Business rules (full-day minutes, PTO accrual rate, QR rotation timing, …) live in the `config` table (`03_config_seed.sql`). The admin UI reads `full_day_min` and `pto_rate_per_month` from there at load; the anonymous employee screen uses the RPCs, which read config server-side.
+
+## Browser observations and fraud limits
+
+`browser_observations` adds a coarse, unverified browser hint to future punches. Existing rows remain `unknown`. The dashboard groups new identities per employee, while preserving shared-identity alerts. These are investigation aids, not proof of a new phone or fraud. See `FRAUD_REVIEW.md` for the current protection gaps and next decisions. Run `node tests/owner_calendar.cjs`; run `tests/browser_observations.sql` within `BEGIN`/`ROLLBACK` after the migration.

@@ -86,6 +86,18 @@ vm.runInContext(script+`
   events=[{empId:emp,ts:parisToTs('2026-09-01','10:00')}];
   assert.equal(buildNoShows([],new Set()).length,0);
   ADMIN.setSheetMonth('2024-01'); await ADMIN.renderSheet(); assert.equal(document.getElementById('sheetMonthPicker').value,'2024-01');
+  // Group reset identities; reviewing one batch must not hide future resets.
+  const now=Date.now();
+  events=Array.from({length:10},(_,i)=>({empId:emp,device:'browser-'+i,ts:now-(10-i)*60000,browser:i%2?'Zalo':'unknown'}));
+  let df=buildDeviceFlags(new Set()).filter(f=>f.kind==='dev-new');
+  assert.equal(df.length,1); assert.equal(df[0].n,9);
+  const reviewed=new Set([df[0].fid]);
+  assert.equal(buildDeviceFlags(reviewed).filter(f=>f.kind==='dev-new').length,0);
+  events.push({empId:emp,device:'next-browser',ts:now,browser:'Chrome'});
+  assert.equal(buildDeviceFlags(reviewed).filter(f=>f.kind==='dev-new').length,1);
+  events.push({empId:'other',device:'next-browser',ts:now});
+  assert(buildDeviceFlags(new Set()).some(f=>f.kind==='dev-multi'));
+  assert(!alertCard(df[0]).includes('đang dùng Zalo'));
   console.log('PASS: calendar draft, clear-day confirmation, hours validation, half-day payloads, immutable snapshot display, manager restriction, retries, adjacent visits, historical calendar.');
 })().catch(e=>{console.error(e);process.exitCode=1});
 `,vm.createContext({...context,process}));

@@ -690,7 +690,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.09.11-02';   // bump on every deploy — powers the update banner
+const BUILD='v2026.09.11-03';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -1327,24 +1327,18 @@ function buildDeviceFlags(acks){
   }
   for(const [empId,m] of Object.entries(empDevs)){
     if(m.size<2) continue;                      // one known device = nothing to compare
-    /* CHURN: a phone identity that resets constantly (Zalo's in-app browser, private
-       mode, cleared storage) would raise a "new device" alert on EVERY punch. That
-       noise trains managers to dismiss alerts, which quietly disables the whole
-       detection. Raise one standing, actionable alert instead. */
-    const punchCount = events.filter(ev=>ev.empId===empId && ev.device).length;
-    if(m.size >= 4 && m.size >= punchCount*0.8){
-      const fid = 'devchurn-'+empId;
-      if(!acks.has(fid)) out.push({kind:'dev-churn', empId, n:m.size, of:punchCount, ts:Date.now(), fid});
-      continue;                                 // and skip the per-device spam for this person
-    }
-    const devs=[...m.entries()].sort((a,b)=>a[1]-b[1]);
-    for(let i=1;i<devs.length;i++){             // every device after the first
-      const [dev, firstTs]=devs[i];
-      if(parisDay(firstTs)<floor) continue;
-      const fid='devnew-'+empId+'-'+dev.slice(0,8);
-      if(acks.has(fid)) continue;
-      out.push({kind:'dev-new', empId, device:dev, ts:firstTs, fid});
-    }
+    const devs=[...m.entries()].sort((a,b)=>a[1]-b[1]||a[0].localeCompare(b[0]));
+    const recent=devs.slice(1).filter(([dev,ts])=>parisDay(ts)>=floor);
+    if(!recent.length) continue;
+    const [dev,firstTs]=recent.at(-1);
+    // One warning per employee. A new identity changes the acknowledgement key,
+    // so reviewing today's warning never approves future identities automatically.
+    const fid='devnew-'+empId+'-'+dev.slice(0,8);
+    if(acks.has(fid)) continue;
+    const hints=[...new Set(events.filter(ev=>ev.empId===empId&&recent.some(([id])=>id===ev.device))
+      .map(ev=>ev.browser||'unknown'))];
+    out.push({kind:'dev-new',empId,device:dev,ts:firstTs,fid,n:recent.length,browsers:hints});
+
   }
   return out;
 }
@@ -1418,7 +1412,7 @@ function alertCard(f){
 
   if(f.kind === 'dev-multi'){
     const names = f.empIds.map(empName).join(', ');
-    return open + `<b>1 điện thoại · ${f.empIds.length} người</b> · ${fmtD(f.date)}<br>
+    return open + `<b>1 nhận diện trình duyệt · ${f.empIds.length} người</b> · ${fmtD(f.date)}<br>
       <span class="muted" style="font-size:12.5px">${names}</span>
       <div class="flag-resolve">
         <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empIds[0]}')">Đã kiểm tra</button>
@@ -1426,26 +1420,19 @@ function alertCard(f){
   }
 
   if(f.kind === 'dev-cross'){
-    return open + `<b>${empName(f.empId)}</b> dùng máy của <b>${empName(f.ownerId)}</b> · ${fmtD(f.date)}
+    return open + `<b>${empName(f.empId)}</b> dùng nhận diện trình duyệt thường gặp ở <b>${empName(f.ownerId)}</b> · ${fmtD(f.date)}
       <div class="flag-resolve">
         <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Đã kiểm tra</button>
       </div></div>`;
   }
 
-  if(f.kind === 'dev-churn'){
-    return open + `<b>${empName(f.empId)}</b> — đang dùng Zalo để vào web<br>
-      <span class="muted" style="font-size:12.5px">Nhờ nhân viên mở trình duyệt độc lập · ${f.n}/${f.of} lượt</span>
-      <div class="flag-resolve">
-        <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Đã nhắc</button>
-      </div></div>`;
-  }
-
-  /* dev-new */
-  return open + `<b>${empName(f.empId)}</b> — điện thoại mới<br>
-    <span class="muted" style="font-size:12.5px">${fmtD(parisDay(f.ts))} lúc ${parisTime(f.ts)}</span>
+  /* Browser observations are hints, not proof of a physical phone or its owner. */
+  return open + `<b>${empName(f.empId)}</b> — trình duyệt mới · Nouveau navigateur<br>
+    <span class="muted" style="font-size:12.5px">${f.n||1} nhận diện mới · ${fmtD(parisDay(f.ts))}<br>${(f.browsers||['unknown']).map(b=>esc(b==='unknown'?'Không rõ · Inconnu':b)).join(', ')}</span>
     <div class="flag-resolve">
-      <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Máy mới hợp lệ</button>
+      <button class="btn btn-ink btn-sm" onclick="ADMIN.ackDevice('${f.fid}','${f.empId}')">Đã kiểm tra · Vérifié</button>
     </div></div>`;
+
 }
 
 /* Supabase caps EVERY query at 1000 rows regardless of .limit() — so a single
@@ -1488,7 +1475,7 @@ async function monthData(pm, fullMonth=false){
     fetchAll(()=>sb.from('corrections').select('*'), 'created_at', {ascending:true}),
   ]);
   const ev = (pRows||[]).map(p=>({ id:p.id, empId:String(p.employee_id), shop:p.shop_id,
-    type:p.type, ts:Date.parse(p.ts), device:p.device_uuid, ip:p.ip }));
+    type:p.type, ts:Date.parse(p.ts), device:p.device_uuid, browser:p.browser_hint||'unknown', ip:p.ip }));
   const cr = (cRows||[]).map(c=>({ id:c.id, kind:c.kind, eventId:c.punch_id,
     syntheticRef:c.synthetic_ref, empId:String(c.employee_id), dayDate:c.day_date, details:c.details,
     oldTs:c.old_ts?Date.parse(c.old_ts):null, newTs:c.new_ts?Date.parse(c.new_ts):null,
@@ -1522,7 +1509,7 @@ async function loadAll(){
   employees = (emps.data||[]).map(e=>({ id:String(e.id), name:e.name, pin:e.login_code,
     ptoOpening:+e.pto_opening, ptoStart:String(e.pto_start_month).slice(0,7), active:e.active }));
   events = (pns||[]).map(p=>({ id:p.id, empId:String(p.employee_id), shop:p.shop_id,
-    type:p.type, ts:Date.parse(p.ts), device:p.device_uuid, ip:p.ip }));
+    type:p.type, ts:Date.parse(p.ts), device:p.device_uuid, browser:p.browser_hint||'unknown', ip:p.ip }));
   corrections = (cors||[]).map(c=>({ id:c.id, kind:c.kind, eventId:c.punch_id,
     syntheticRef:c.synthetic_ref, empId:String(c.employee_id), dayDate:c.day_date, details:c.details,
     oldTs:c.old_ts?Date.parse(c.old_ts):null, newTs:c.new_ts?Date.parse(c.new_ts):null,
@@ -1909,7 +1896,7 @@ const ADMIN = {
         if(c.kind==='ack')     what = !c.syntheticRef ? 'Xác nhận'
           : c.syntheticRef.startsWith('noshow-')   ? `Ghi nhận vắng không phép (${c.syntheticRef.split('-').slice(-3).join('-')})`
           : c.syntheticRef.startsWith('devmulti-') ? `Đã kiểm tra cảnh báo «một máy nhiều người» (${c.syntheticRef.split('-').slice(-3).join('-')})`
-          : c.syntheticRef.startsWith('devnew-')   ? 'Xác nhận điện thoại mới hợp lệ'
+          : c.syntheticRef.startsWith('devnew-')   ? 'Đã kiểm tra nhận diện trình duyệt mới'
           : 'Xác nhận';
         if(c.kind==='edit')    what=`Sửa giờ ${ev&&ev.type==='in'?'VÀO':'RA'}: ${parisTime(c.oldTs)} → <b>${parisTime(c.newTs)}</b> (${parisDay(c.newTs)})`;
         if(c.kind==='day-edit') what=`${c.details?.request?.type==='clear'?'Xóa dữ liệu ngày · Journée effacée':'Chỉnh ngày công · Journée modifiée'} <b>${esc(c.dayDate)}</b><br><span class="muted">Trước · Avant: ${esc(calendarSnapshotLabel(c.details?.before,c.empId,c.dayDate))}<br>Sau · Après: ${esc(calendarSnapshotLabel(c.details?.after,c.empId,c.dayDate))}</span>`;
