@@ -287,10 +287,10 @@
   .day-editor{display:flex;flex-direction:column;max-height:90dvh}
   .day-editor-fields{border:0;padding:0;min-width:0;min-height:0;overflow:auto}
   .day-scroll{padding:0 20px 12px}
-  .day-editor header{padding:20px 20px 0}
+  .day-editor header{padding:12px 20px 0;text-align:left}
   .day-cleared{background:var(--muted);color:var(--ink-soft)}
-  .day-editor header{display:flex;justify-content:space-between;gap:12px;align-items:start;margin-bottom:18px}
-  .day-editor h2{margin:4px 0;font-size:22px}
+  .day-editor header{display:flex;justify-content:space-between;gap:12px;align-items:start;margin-bottom:12px}
+  .day-editor h2{margin:3px 0;font-size:15px}
   .day-editor label{display:block;font-size:13px;font-weight:600}
   .day-editor select,.day-editor input,.day-editor textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px;width:100%;box-sizing:border-box;margin-top:5px}
   .day-editor textarea{resize:vertical}
@@ -303,7 +303,7 @@
   .day-clear-btn{margin-right:auto;color:var(--rose);border:1px solid var(--rose)}
   .day-total{font-weight:700;font-size:16px;margin:14px 0}
   .day-preview{font-size:12px;padding:8px 12px;background:var(--muted);border-radius:8px;margin-bottom:16px}
-  @media(max-width:440px){.day-scroll{padding:0 14px 12px}.day-footer{padding:12px 14px}.day-editor h2{font-size:19px}}
+  @media(max-width:440px){.day-scroll{padding:0 14px 12px}.day-footer{padding:12px 14px}.day-editor h2{font-size:15px}}
 </style>
 </head>
 <body>
@@ -638,13 +638,11 @@
 </main>
 <dialog id="ownerDayDialog" class="day-dialog" aria-labelledby="ownerDayTitle" oncancel="event.preventDefault();ADMIN.closeDayEditor()">
   <div class="day-editor">
-    <header><div><div class="muted" id="ownerDayEmployee"></div><h2 id="ownerDayTitle"></h2><div class="day-hint">Chỉnh ngày công · Modifier la journée</div></div>
-      <button class="btn btn-ghost btn-sm" aria-label="Đóng · Fermer" onclick="ADMIN.closeDayEditor()">✕</button></header>
+    <header><div><div class="muted" id="ownerDayEmployee"></div><h2 id="ownerDayTitle"></h2></div></header>
     <fieldset id="ownerDayFields" class="day-editor-fields"><div class="day-scroll">
     <label>Loại ngày · Type de journée
       <select id="ownerDayType" onchange="ADMIN.setDayEditorType(this.value)">
         <option value="work">Đi làm · Travail</option>
-        <option value="clear">Xóa dữ liệu ngày · Effacer la journée</option>
         <option value="dayoff">Nghỉ tuần · Repos hebdomadaire</option>
         <option value="pto">Nghỉ phép cả ngày · Congé journée entière</option>
         <option value="am">Nghỉ phép buổi sáng · Congé le matin</option>
@@ -653,16 +651,13 @@
     </label>
     <div id="ownerDayWarning" class="day-warning" hidden></div>
     <div id="ownerDayWork">
-      <p class="day-hint">Giờ Paris. 00:00 ở ô chưa có dữ liệu là giờ trống. · Heure de Paris. 00:00 indique une heure manquante.</p>
       <div id="ownerDaySessions"></div>
       <button class="btn btn-ghost btn-sm" onclick="ADMIN.addDayEditorSession()">＋ Thêm lượt làm · Ajouter une plage</button>
-      <button class="btn btn-ghost btn-sm" style="color:var(--rose)" onclick="ADMIN.clearDayEditorSessions()">Xóa tất cả giờ · Effacer les heures</button>
       <div id="ownerDayTotal" class="day-total" aria-live="polite"></div>
     </div>
     <label style="margin-top:16px">Ghi chú (không bắt buộc) · Note facultative
       <textarea id="ownerDayNote" maxlength="2000" rows="2" oninput="ADMIN._dayDraft.note=this.value;ADMIN.dayEditorChanged()" placeholder=""></textarea>
     </label>
-    <p class="day-hint">Bản gốc vẫn được giữ trong lịch sử khi điều chỉnh hoặc xóa giờ. · Les heures d’origine restent dans l’historique.</p>
     <p id="ownerDayError" class="errline" role="alert"></p>
     <div id="ownerDayReview" class="day-warning" hidden aria-live="polite"></div>
     </div></fieldset>
@@ -670,6 +665,16 @@
       <button id="ownerDayClear" class="btn btn-ghost btn-sm day-clear-btn" onclick="ADMIN.clearOwnerDay()">Xóa ngày · Effacer le jour</button>
       <button class="btn btn-ghost btn-sm" onclick="ADMIN.closeDayEditor()">Đóng · Fermer</button>
       <button id="ownerDaySave" class="btn btn-ink btn-sm" onclick="ADMIN.submitDayEditor()">Xem & lưu · Vérifier</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="ownerDayConfirm" class="day-dialog" aria-labelledby="ownerDayConfirmTitle">
+  <div style="padding:20px">
+    <h3 id="ownerDayConfirmTitle">Bạn muốn tiếp tục xóa ngày này? · Voulez-vous continuer ?</h3>
+    <div class="day-footer">
+      <button class="btn btn-ghost" onclick="document.getElementById('ownerDayConfirm').close()">Không · Non</button>
+      <button class="btn btn-ink" onclick="ADMIN.confirmClearOwnerDay()">Có · Oui</button>
     </div>
   </div>
 </dialog>
@@ -685,7 +690,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0Z2xvdHBhem1heXFub2xqcHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NjQyMDcsImV4cCI6MjA5OTA0MDIwN30.IXjunVEgcH8TQYTx0uzqVBMaMdCoaTGk8PxKz2Px7bQ',
   SHOP_IDS:          [1, 2],   // extend when a new store opens
 };
-const BUILD='v2026.09.11-01';   // bump on every deploy — powers the update banner
+const BUILD='v2026.09.11-02';   // bump on every deploy — powers the update banner
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- device fingerprint: assigned UUID, planted once ---------- */
@@ -1232,6 +1237,9 @@ function ptoAccrued(e){
 }
 const ptoUsed = e => leave.filter(l=>l.type==='pto'&&l.empId===e.id&&l.status==='approved').reduce((a,l)=>a+(+l.days),0);
 const ptoBalance = e => (e.ptoOpening||0) + ptoAccrued(e) - ptoUsed(e);
+function isRosterDayOff(l, history=corrections){
+  return l.type==='dayoff' && !history.some(c=>c.kind==='day-edit' && c.empId===l.empId && c.dayDate===l.date);
+}
 function buildNoShows(sessions, acks){
   const out=[]; const today=parisDay(Date.now()); const floor=addDays(today,-30);
   for(const e of employees){
@@ -1240,7 +1248,7 @@ function buildNoShows(sessions, acks){
     const firstTs = events.filter(ev=>ev.empId===e.id).reduce((a,ev)=>Math.min(a,ev.ts), Infinity);
     if(firstTs===Infinity) continue;
     const firstDay = parisDay(firstTs);
-    const weeks = new Set(leave.filter(l=>l.type==='dayoff'&&l.empId===e.id).map(l=>weekMonday(l.date)));
+    const weeks = new Set(leave.filter(l=>l.empId===e.id&&isRosterDayOff(l)).map(l=>weekMonday(l.date)));
     for(const wk of weeks){
       for(let i=0;i<7;i++){
         const d=addDays(wk,i);
@@ -1616,8 +1624,8 @@ const ADMIN = {
     }
   },
 
-  async refresh(){
-    await loadAll();
+  async refresh(reload=true){
+    if(reload) await loadAll();
     if(employees.length===0 && events.length===0){
       // an authenticated non-manager sees empty tables — say so honestly
       document.getElementById('tblToday').innerHTML =
@@ -1950,11 +1958,11 @@ const ADMIN = {
     this.refresh();
   },
 
-  setLogQuery(v){ this.logQuery=v; this.refresh(); },
+  setLogQuery(v){ this.logQuery=v; this.refresh(false); },
   toggleLogSort(){
     this.logSort = this.logSort==='asc' ? 'desc' : 'asc';
     document.getElementById('logSortBtn').textContent = this.logSort==='asc' ? 'Cũ nhất trước' : 'Mới nhất trước';
-    this.refresh();
+    this.refresh(false);
   },
   exportLog(){
     const list=this._logList||[];
@@ -1970,11 +1978,11 @@ const ADMIN = {
     a.download='lich-su-cham-cong-'+(this.logMonth||parisMonth(Date.now()))+'.csv';
     document.body.appendChild(a); a.click(); a.remove();
   },
-  setAuditQuery(v){ this.auditQuery=v; this.refresh(); },
+  setAuditQuery(v){ this.auditQuery=v; this.refresh(false); },
   toggleAuditSort(){
     this.auditSort = this.auditSort==='asc' ? 'desc' : 'asc';
     document.getElementById('auditSortBtn').textContent = this.auditSort==='asc' ? 'Cũ nhất trước' : 'Mới nhất trước';
-    this.refresh();
+    this.refresh(false);
   },
   async copyLastWeek(){
     const today=parisDay(Date.now());
@@ -2050,7 +2058,7 @@ const ADMIN = {
   },
 
   /* --- personal monthly timesheet: one person, every day --- */
-  setSheetEmp(v){ this.sheetEmp=v; this.refresh(); },
+  setSheetEmp(v){ this.sheetEmp=v; this.renderSheet(); },
   shiftSheetMonth(n){ this.sheetMonthOffset=(this.sheetMonthOffset||0)+n; this.renderSheet(); },
   setSheetMonth(v){
     if(!/^\d{4}-\d{2}$/.test(v) || +v.slice(0,4)<1900 || +v.slice(0,4)>9998) return;
@@ -2103,7 +2111,7 @@ const ADMIN = {
       const needsFix=flags.some(f=>f.empId===emp.id&&(f.kind==='missing-out'||f.kind==='missing-in')&&f.ts&&parisDay(f.ts)===d);
       const live=ds.some(x=>x.end===null);
       /* only call it an absence in a week the manager actually rostered - otherwise we simply do not know */
-      const rostered=leave.some(l=>l.type==='dayoff'&&l.empId===emp.id&&weekMonday(l.date)===weekMonday(d));
+      const rostered=leave.some(l=>l.empId===emp.id&&isRosterDayOff(l,md.corrections)&&weekMonday(l.date)===weekMonday(d));
       let st;
       if(d>today) st='future';
       else if(live) st='live';
@@ -2167,10 +2175,10 @@ const ADMIN = {
       if(!data?.ok||!data.version||!data.snapshot) throw new Error('invalid_response');
       const emp=employees.find(e=>e.id===empId); if(!emp) return;
       const original=calendarDraftFromSnapshot(data.snapshot,empId,date);
-      this._dayDraft={...original,empId,date,note:'',dirty:false,version:data.version,reviewed:false,pendingRequest:null};
+      this._dayDraft={...original,type:original.type==='clear'?'work':original.type,empId,date,note:'',dirty:false,version:data.version,reviewed:false,pendingRequest:null};
       document.getElementById('ownerDayEmployee').textContent=emp.name;
       document.getElementById('ownerDayTitle').textContent=new Intl.DateTimeFormat('vi-VN',{weekday:'long',day:'numeric',month:'numeric',year:'numeric',timeZone:'Europe/Paris'}).format(new Date(date+'T12:00:00Z'));
-      document.getElementById('ownerDayType').value=original.type;
+      document.getElementById('ownerDayType').value=original.type==='clear'?'work':original.type;
       document.getElementById('ownerDayNote').value='';
       document.getElementById('ownerDayError').textContent='';
       document.getElementById('ownerDayReview').hidden=true;
@@ -2187,9 +2195,14 @@ const ADMIN = {
   },
   clearOwnerDay(){
     if(!this._dayDraft||this._daySaving) return;
+    document.getElementById('ownerDayConfirm').showModal();
+  },
+  async confirmClearOwnerDay(){
+    document.getElementById('ownerDayConfirm').close();
+    if(!this._dayDraft||this._daySaving) return;
     this._dayDraft.type='clear'; this.dayEditorChanged();
-    document.getElementById('ownerDayType').value='clear'; this.renderDayEditor();
-    this.reviewDayEditor();
+    this._dayDraft.reviewed=true;
+    await this.submitDayEditor();
   },
   closeDayEditor(){
     if(this._daySaving) return;
@@ -2229,12 +2242,7 @@ const ADMIN = {
     const fullLeave=['dayoff','pto','clear'].includes(d.type);
     document.getElementById('ownerDayWork').hidden=fullLeave;
     const warning=document.getElementById('ownerDayWarning');
-    warning.hidden=d.type!=='clear' && !(fullLeave&&d.hadWork) && !d.hadLeave;
-    warning.textContent=d.type==='clear'
-      ?'Xóa toàn bộ giờ làm và nghỉ tuần / phép của ngày này khỏi bảng công. Tổng giờ: 0. Lịch sử gốc vẫn được giữ. · Retirer les heures et congés de cette date. Historique conservé.'
-      :fullLeave&&d.hadWork
-      ?'Đổi sang nghỉ sẽ bỏ giờ làm của ngày này khỏi tổng công. Bản gốc vẫn được giữ. · Les heures seront retirées du total, avec conservation de l’historique.'
-      :d.hadLeave?'Chỉ điều chỉnh ngày đã chọn; các ngày nghỉ khác giữ nguyên. · Seule la date choisie sera modifiée.':'';
+    warning.hidden=true; warning.textContent='';
     const rows=d.rows.length?d.rows:[{in:null,out:null,shop:String(shops[0]?.id||'')}];
     document.getElementById('ownerDaySessions').innerHTML=rows.map((r,i)=>`
       <div class="day-session"><div class="day-session-head"><b>Lượt ${i+1} · Plage ${i+1}</b>
@@ -2453,7 +2461,7 @@ const ADMIN = {
   },
 
   /* --- per-employee punch editor (inline day dropdown) --- */
-  selectEmp(id){ this.selectedEmp=(this.selectedEmp===id?null:id); this.refresh(); },
+  selectEmp(id){ this.selectedEmp=(this.selectedEmp===id?null:id); this.refresh(false); },
 
   /* --- corrections (attributed to the signed-in manager by RLS) --- */
   async saveCorrection(rec){
@@ -2510,8 +2518,8 @@ const ADMIN = {
   },
 
   /* --- leave management --- */
-  shiftWeek(n){ this.weekOffset=(this.weekOffset||0)+n; this.refresh(); },
-  resetWeek(){ this.weekOffset=0; this.refresh(); },
+  shiftWeek(n){ this.weekOffset=(this.weekOffset||0)+n; this.refresh(false); },
+  resetWeek(){ this.weekOffset=0; this.refresh(false); },
   async toggleDayOff(empId, date){
     if(ptoOn(empId,date)) return;
     const rec = leave.find(l=>l.type==='dayoff'&&l.empId===empId&&l.date===date);
@@ -2566,8 +2574,8 @@ const ADMIN = {
   },
 
   /* --- export --- */
-  setPayMonth(v){ this.payMonth=v; this.refresh(); },
-  setLogMonth(v){ this.logMonth=v; this.refresh(); },
+  setPayMonth(v){ this.payMonth=v; this.refresh(false); },
+  setLogMonth(v){ this.logMonth=v; this.refresh(false); },
   _csvRows(sep){
     const p=this._pay; if(!p) return '';
     const q=s=>'"'+String(s).replace(/"/g,'""')+'"';

@@ -31,10 +31,11 @@ vm.runInContext(script+`
   assert(ADMIN.dayEditorResult().error.includes('chevauchent'));
   ADMIN.removeDayEditorSession(1); ADMIN.updateDayEditorSession(0,'out','09:00'); assert(ADMIN.dayEditorResult().error);
   ADMIN.setDayEditorType('pto'); assert.equal(ADMIN.dayEditorResult().minutes,0); assert(document.getElementById('ownerDayWork').hidden);
-  ADMIN.clearOwnerDay(); assert.equal(ADMIN._dayDraft.type,'clear'); assert(ADMIN._dayDraft.reviewed);
-  assert(document.getElementById('ownerDayWarning').textContent.includes('Tổng giờ: 0'));
-  assert(document.getElementById('ownerDaySave').textContent.includes('Confirmer'));
-  await ADMIN.submitDayEditor();
+  ADMIN.clearOwnerDay(); assert.equal(ADMIN._dayDraft.type,'pto');
+  assert(document.getElementById('ownerDayConfirm').open);
+  document.getElementById('ownerDayConfirm').close();
+  assert.equal(calls.filter(c=>c.name==='owner_calendar_save').length,0);
+  await ADMIN.confirmClearOwnerDay();
   let saved=calls.filter(c=>c.name==='owner_calendar_save').at(-1).args;
   assert.equal(saved.p_type,'clear'); assert.equal(saved.p_sessions.length,0); assert.equal(saved.p_note,null);
   assert.equal(ADMIN._dayDraft,null);
@@ -53,10 +54,9 @@ vm.runInContext(script+`
   await ADMIN.submitDayEditor(); assert(ADMIN._dayDraft.reviewed);
   await ADMIN.submitDayEditor(); saved=calls.at(-1).args;
   assert.equal(saved.p_type,'am'); assert.equal(saved.p_sessions.length,2); assert.equal(saved.p_note,'optional');
-  // A changed popup discards prior review, so a previously confirmed clear cannot
-  // silently submit after the owner switches back to work.
+  // Cancelling deletion leaves the draft unchanged.
   await ADMIN.openDayEditor(emp,day); ADMIN.clearOwnerDay(); ADMIN.setDayEditorType('work');
-  assert.equal(ADMIN._dayDraft.reviewed,false); ADMIN.closeDayEditor();
+  assert.equal(ADMIN._dayDraft.reviewed,false); document.getElementById('ownerDayConfirm').close(); ADMIN.closeDayEditor();
   const start=calls.length; managersList[0].role='manager'; await ADMIN.openDayEditor(emp,day);
   assert.equal(calls.length,start); assert.equal(ADMIN._dayDraft,null);
   assert(calendarError({message:'day_changed'}).includes('rور')===false);
@@ -76,6 +76,15 @@ vm.runInContext(script+`
   managersList[0].role='owner'; await ADMIN.renderSheet();
   assert(document.getElementById('sheetCal').innerHTML.includes('cal-editable'));
   assert(document.getElementById('sheetCal').innerHTML.includes('Đã xóa'));
+  // An owner day-off correction must not infer absences elsewhere in the week.
+  leave=[{type:'dayoff',empId:emp,date:day}];
+  md.corrections=[{kind:'day-edit',empId:emp,dayDate:day,details:{request:{type:'dayoff'}}}];
+  await ADMIN.renderSheet();
+  assert(!document.getElementById('sheetCal').innerHTML.includes('Vắng'));
+  assert(isRosterDayOff(leave[0],[])===true,'Existing weekly roster behavior remains');
+  corrections=md.corrections;
+  events=[{empId:emp,ts:parisToTs('2026-09-01','10:00')}];
+  assert.equal(buildNoShows([],new Set()).length,0);
   ADMIN.setSheetMonth('2024-01'); await ADMIN.renderSheet(); assert.equal(document.getElementById('sheetMonthPicker').value,'2024-01');
   console.log('PASS: calendar draft, clear-day confirmation, hours validation, half-day payloads, immutable snapshot display, manager restriction, retries, adjacent visits, historical calendar.');
 })().catch(e=>{console.error(e);process.exitCode=1});
